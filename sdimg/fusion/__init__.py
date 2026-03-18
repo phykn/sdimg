@@ -1,4 +1,3 @@
-from .active_contour import active_contour_refine
 from .grabcut import grabcut_refine
 from .guided_filter import guided_filter_refine
 from .otsu import otsu_threshold
@@ -16,7 +15,6 @@ from .sync import (
 
 __all__ = [
     "otsu_threshold",
-    "active_contour_refine",
     "grabcut_refine",
     "guided_filter_refine",
     "sync_crop",

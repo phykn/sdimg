@@ -1,6 +1,5 @@
 from .core import is_image, is_mask, to_gray, to_mask, to_rgb
 from .fusion import (
-    active_contour_refine,
     grabcut_refine,
     guided_filter_refine,
     otsu_threshold,
@@ -41,7 +40,6 @@ from .spatial import crop, flip, merge, pad, resize, rotate, split, unpad
 
 __all__ = [
     "adjust_brightness_contrast",
-    "active_contour_refine",
     "clahe_norm",
     "concave_hull",
     "convex_hull",
