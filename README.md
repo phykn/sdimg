@@ -65,3 +65,8 @@ mask = sdimg.morphology(mask, "open", (3, 3), 1)
 
 resized_image, resized_mask = sdimg.sync_resize(image, mask, height=256)
 ```
+
+## Notebook
+
+`test.ipynb` is provided for visual checking of the main functions.
+It uses `asset/sample_image.png` and `asset/sample_mask.png` and is intended as a simple manual test notebook.
