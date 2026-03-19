@@ -1,18 +1,50 @@
 import numpy as np
 
-from ..core import to_mask
+
+def is_mask(mask: object) -> bool:
+    if not isinstance(mask, np.ndarray):
+        return False
+
+    try:
+        to_mask(mask)
+    except ValueError:
+        return False
+
+    return True
 
 
-def get_coords(src: np.ndarray) -> np.ndarray:
-    mask = to_mask(src)
+def to_mask(mask: np.ndarray) -> np.ndarray:
+    if mask.ndim != 2:
+        raise ValueError("Mask input must have shape (H, W).")
+
+    if mask.dtype == np.bool_:
+        return mask.astype(np.uint8)
+
+    unique_values = set(np.unique(mask).tolist())
+    if unique_values <= {0, 1}:
+        return mask.astype(np.uint8)
+
+    if unique_values <= {0, 255}:
+        return (mask > 0).astype(np.uint8)
+
+    if unique_values <= {0.0, 1.0}:
+        return mask.astype(np.uint8)
+
+    raise ValueError(
+        "Mask input must contain only binary values represented as "
+        "bool, {0, 1}, {0, 255}, or {0.0, 1.0}.",
+    )
+
+
+def get_coords(mask: np.ndarray) -> np.ndarray:
     coords = np.argwhere(mask == 1)
-    return coords.astype(np.int64, copy=False)
+    return coords
 
 
 def get_bbox(
-    src: np.ndarray,
+    mask: np.ndarray,
 ) -> tuple[int, int, int, int] | None:
-    coords = get_coords(src)
+    coords = get_coords(mask)
 
     if coords.shape[0] == 0:
         return None
@@ -24,15 +56,14 @@ def get_bbox(
     return (wmin, hmin, wmax, hmax)
 
 
-def get_area(src: np.ndarray) -> int:
-    mask = to_mask(src)
+def get_area(mask: np.ndarray) -> int:
     return int(np.count_nonzero(mask))
 
 
 def get_centroid(
-    src: np.ndarray,
+    mask: np.ndarray,
 ) -> tuple[float, float] | None:
-    coords = get_coords(src)
+    coords = get_coords(mask)
 
     if coords.shape[0] == 0:
         return None

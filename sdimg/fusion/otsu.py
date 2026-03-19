@@ -1,20 +1,17 @@
 import numpy as np
 from skimage.filters import threshold_otsu
 
-from ..core import is_image, to_gray
+from ..image.helper import to_gray
 
 
 def otsu_threshold(
-    src: np.ndarray,
-    threshold_offset: float = 0.0,
+    image: np.ndarray,
+    scale: float = 1.0,
 ) -> np.ndarray:
-    if not is_image(src):
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
+    if scale < 0:
+        raise ValueError("scale must be greater than or equal to 0.")
 
-    if threshold_offset < 0:
-        raise ValueError("threshold_offset must be greater than or equal to 0.")
-
-    gray = to_gray(src)
+    gray = to_gray(image)
     threshold = float(threshold_otsu(gray))
-    adjusted_threshold = max(0.0, float(threshold) - threshold_offset)
+    adjusted_threshold = threshold * scale
     return (gray > adjusted_threshold).astype(np.uint8)

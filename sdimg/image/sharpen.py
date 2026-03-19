@@ -1,33 +1,23 @@
 import cv2
 import numpy as np
 
-from ..core import is_image
-
 
 def sharpen(
-    src: np.ndarray,
+    image: np.ndarray,
     alpha: float = 1.0,
-    ksize: tuple[int, int] = (5, 5),
-    sigmaX: float = 1.0,
-    sigmaY: float = 0.0,
-    borderType: int = cv2.BORDER_DEFAULT,
 ) -> np.ndarray:
-    if not is_image(src):
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
-    image = src.astype(np.uint8, copy=False)
     blurred = cv2.GaussianBlur(
-        image,
-        ksize,
-        sigmaX,
-        sigmaY=sigmaY,
-        borderType=borderType,
+        src=image,
+        ksize=(0, 0),
+        sigmaX=1.0,
+        sigmaY=0.0,
+        borderType=cv2.BORDER_DEFAULT,
     )
-    sharpened = cv2.addWeighted(
-        image,
-        1.0 + alpha,
-        blurred,
-        -alpha,
-        0.0,
+
+    return cv2.addWeighted(
+        src1=image,
+        alpha=1.0 + alpha,
+        src2=blurred,
+        beta=-alpha,
+        gamma=0.0,
     )
-    return sharpened.astype(np.uint8, copy=False)

@@ -1,19 +1,18 @@
 import cv2
 import numpy as np
 
-from ..core import to_mask
+from .pad import pad_1px, unpad_1px
 
 
 def extract_edge(
-    src: np.ndarray,
+    mask: np.ndarray,
     ksize: tuple[int, int] = (3, 3),
 ) -> np.ndarray:
-    mask = to_mask(src)
-
     if np.count_nonzero(mask) == 0:
         return mask
 
     kernel = np.ones(ksize, dtype=np.uint8)
-    eroded = cv2.erode(mask, kernel)
-    edge = mask - eroded
+    padded = pad_1px(mask)
+    edge = padded - cv2.erode(padded, kernel)
+    edge = unpad_1px(edge)
     return (edge > 0).astype(np.uint8)

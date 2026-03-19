@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
 
-from ..core import is_mask
-from ._common import _finalize_image, _finalize_mask, _require_spatial_input
-
 
 def resize(
     src: np.ndarray,
@@ -11,30 +8,43 @@ def resize(
     width: int | None = None,
     interpolation: int = cv2.INTER_CUBIC,
 ) -> np.ndarray:
-    data = _require_spatial_input(src)
-    target_height, target_width = _resolve_target_size(data, height, width)
-
-    resized = cv2.resize(
-        data,
-        (target_width, target_height),
+    dst_h, dst_w = _target_size(
+        shape=src.shape[:2],
+        height=height,
+        width=width,
+    )
+    return cv2.resize(
+        src=src,
+        dsize=(dst_w, dst_h),
         interpolation=interpolation,
     )
 
-    if is_mask(data):
-        return _finalize_mask(resized)
 
-    return _finalize_image(resized)
-
-
-def _resolve_target_size(
+def resize_keep_ratio(
     src: np.ndarray,
+    long_side: int,
+    interpolation: int = cv2.INTER_CUBIC,
+) -> np.ndarray:
+    dst_h, dst_w = _long_side_size(
+        shape=src.shape[:2],
+        long_side=long_side,
+    )
+    return cv2.resize(
+        src=src,
+        dsize=(dst_w, dst_h),
+        interpolation=interpolation,
+    )
+
+
+def _target_size(
+    shape: tuple[int, int],
     height: int | None,
     width: int | None,
 ) -> tuple[int, int]:
     if height is None and width is None:
         raise ValueError("height or width must be provided.")
 
-    source_height, source_width = src.shape[:2]
+    src_h, src_w = shape
 
     if height is not None and height <= 0:
         raise ValueError("height must be greater than 0.")
@@ -42,15 +52,32 @@ def _resolve_target_size(
     if width is not None and width <= 0:
         raise ValueError("width must be greater than 0.")
 
-    if height is not None and width is not None:
-        return (height, width)
+    if height is None:
+        scale = width / src_w
+        dst_h = max(1, int(round(src_h * scale)))
+        dst_w = width
+    elif width is None:
+        scale = height / src_h
+        dst_h = height
+        dst_w = max(1, int(round(src_w * scale)))
+    else:
+        dst_h = height
+        dst_w = width
 
-    if height is not None:
-        scale = height / source_height
-        resolved_width = max(1, int(round(source_width * scale)))
-        return (height, resolved_width)
+    return dst_h, dst_w
 
-    assert width is not None
-    scale = width / source_width
-    resolved_height = max(1, int(round(source_height * scale)))
-    return (resolved_height, width)
+
+def _long_side_size(
+    shape: tuple[int, int],
+    long_side: int,
+) -> tuple[int, int]:
+    if long_side <= 0:
+        raise ValueError("long_side must be greater than 0.")
+
+    src_h, src_w = shape
+    src_long_side = max(src_h, src_w)
+    scale = long_side / src_long_side
+
+    dst_h = max(1, int(round(src_h * scale)))
+    dst_w = max(1, int(round(src_w * scale)))
+    return dst_h, dst_w

@@ -1,89 +1,56 @@
 import cv2
 import numpy as np
 
-from ..core import is_image
+from .helper import to_uint8
 
 
 def clahe_norm(
-    src: np.ndarray,
+    image: np.ndarray,
     clipLimit: float = 40.0,
     tileGridSize: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
-    if not is_image(src):
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
     clahe = cv2.createCLAHE(
         clipLimit=clipLimit,
         tileGridSize=tileGridSize,
     )
-    image = src.astype(np.uint8, copy=False)
-
-    if image.ndim == 2:
-        return clahe.apply(image)
-
-    channels = []
-    for idx in range(image.shape[2]):
-        channel = image[..., idx]
-        channels.append(clahe.apply(channel))
-
-    return np.stack(channels, axis=2)
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    ycrcb[..., 0] = clahe.apply(ycrcb[..., 0])
+    return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
 
 
-def hist_norm(src: np.ndarray) -> np.ndarray:
-    if not is_image(src):
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
-    image = src.astype(np.uint8, copy=False)
-
-    if image.ndim == 2:
-        return cv2.equalizeHist(image)
-
-    channels = []
-    for idx in range(image.shape[2]):
-        channel = image[..., idx]
-        channels.append(cv2.equalizeHist(channel))
-
-    return np.stack(channels, axis=2)
+def hist_norm(image: np.ndarray) -> np.ndarray:
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    ycrcb[..., 0] = cv2.equalizeHist(ycrcb[..., 0])
+    return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
 
 
-def standard_norm(
-    src: np.ndarray,
+def zscore_norm(
+    image: np.ndarray,
     std_range: float = 3.0,
 ) -> np.ndarray:
-    if not is_image(src):
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
 
-    image = src.astype(np.float32, copy=False)
+    norm = image.astype(np.float32, copy=False)
+    work = norm if norm.ndim == 3 else norm[..., None]
+    mean = np.mean(work, axis=(0, 1), keepdims=True)
+    std = np.std(work, axis=(0, 1), keepdims=True)
+    safe_std = np.where(std == 0.0, 1.0, std)
 
-    if image.ndim == 2:
-        normalized = _normalize_standard_channel(image, std_range)
-    else:
-        channels = []
-        for idx in range(image.shape[2]):
-            channel = image[..., idx]
-            channels.append(_normalize_standard_channel(channel, std_range))
-        normalized = np.stack(channels, axis=2)
+    zscore = (work - mean) / safe_std
+    clipped = np.clip(zscore, -std_range, std_range)
+    scaled = (clipped + std_range) / (2.0 * std_range) * 255.0
+    scaled = np.where(std == 0.0, 127.5, scaled)
 
-    clipped = np.clip(normalized, 0.0, 255.0)
-    rounded = np.rint(clipped)
-    return rounded.astype(np.uint8)
+    result = to_uint8(scaled)
+    return result if norm.ndim == 3 else result[..., 0]
 
 
-def _normalize_standard_channel(
-    src: np.ndarray,
-    std_range: float,
-) -> np.ndarray:
-    mean_val = float(np.mean(src))
-    std_val = float(np.std(src))
-
-    if std_val == 0.0:
-        return src
-
-    lower = mean_val - std_range * std_val
-    upper = mean_val + std_range * std_val
-    clipped = np.clip(src, lower, upper)
-
-    return (clipped - lower) / (upper - lower) * 255.0
+def minmax_norm(image: np.ndarray) -> np.ndarray:
+    return cv2.normalize(
+        image,
+        None,
+        alpha=0.0,
+        beta=255.0,
+        norm_type=cv2.NORM_MINMAX,
+    )

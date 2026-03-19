@@ -1,33 +1,32 @@
 import cv2
 import numpy as np
 
-from ..core import to_mask
-
-
-DISTANCE_TYPES = {
-    "l1": cv2.DIST_L1,
-    "l2": cv2.DIST_L2,
-    "c": cv2.DIST_C,
-}
+from .pad import pad_1px, unpad_1px
 
 
 def distance_transform(
-    src: np.ndarray,
+    mask: np.ndarray,
     distance_type: str = "l2",
     mask_size: int = 3,
 ) -> np.ndarray:
-    mask = to_mask(src)
-
-    if np.count_nonzero(mask) == 0:
+    if not np.any(mask):
         return np.zeros(mask.shape, dtype=np.float32)
 
-    if distance_type not in DISTANCE_TYPES:
+    if distance_type == "l1":
+        cv2_distance_type = cv2.DIST_L1
+    elif distance_type == "l2":
+        cv2_distance_type = cv2.DIST_L2
+    elif distance_type == "c":
+        cv2_distance_type = cv2.DIST_C
+    else:
         raise ValueError("distance_type must be one of: 'l1', 'l2', 'c'.")
 
+    padded = pad_1px(mask)
     distance = cv2.distanceTransform(
-        mask,
-        DISTANCE_TYPES[distance_type],
+        padded,
+        cv2_distance_type,
         mask_size,
         dstType=cv2.CV_32F,
     )
-    return distance.astype(np.float32, copy=False)
+    distance = unpad_1px(distance)
+    return distance

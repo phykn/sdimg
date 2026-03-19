@@ -1,31 +1,32 @@
 import cv2
 import numpy as np
 
-from ..core import to_mask
-
-
-MORPH_OPS = {
-    "open": cv2.MORPH_OPEN,
-    "close": cv2.MORPH_CLOSE,
-}
+from .pad import pad_1px, unpad_1px
 
 
 def morphology(
-    src: np.ndarray,
+    mask: np.ndarray,
     op: str,
     ksize: tuple[int, int] = (3, 3),
     iterations: int = 1,
 ) -> np.ndarray:
-    mask = to_mask(src)
-
-    if op not in MORPH_OPS:
+    if op == "open":
+        cv2_op = cv2.MORPH_OPEN
+    elif op == "close":
+        cv2_op = cv2.MORPH_CLOSE
+    else:
         raise ValueError("op must be one of: 'open', 'close'.")
 
+    if np.count_nonzero(mask) == 0:
+        return mask
+
     kernel = np.ones(ksize, dtype=np.uint8)
+    padded = pad_1px(mask)
     result = cv2.morphologyEx(
-        mask,
-        MORPH_OPS[op],
+        padded,
+        cv2_op,
         kernel,
         iterations=iterations,
     )
-    return (result > 0).astype(np.uint8)
+    result = unpad_1px(result)
+    return result
