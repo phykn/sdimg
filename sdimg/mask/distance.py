@@ -9,6 +9,11 @@ def distance_transform(
     distance_type: str = "l2",
     mask_size: int = 3,
 ) -> np.ndarray:
+    """Compute the distance transform of a binary mask.
+
+    Args:
+        distance_type: One of 'l1', 'l2', 'c'.
+    """
     if not np.any(mask):
         return np.zeros(mask.shape, dtype=np.float32)
 

@@ -48,16 +48,16 @@ def to_gray(image: np.ndarray) -> np.ndarray:
         if channels <= 2:
             gray = image[..., 0]
         elif channels == 3:
-            rgb = image.astype(np.float32, copy=False)
+            rgb = image.astype(np.float32)
             gray = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
         else:
-            rgb = image[..., :3].astype(np.float32, copy=False)
+            rgb = image[..., :3].astype(np.float32)
             gray = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
 
     return to_uint8(gray)
 
 
 def to_uint8(image: np.ndarray) -> np.ndarray:
-    clipped = np.clip(image.astype(np.float32, copy=False), 0.0, 255.0)
+    clipped = np.clip(image.astype(np.float32), 0.0, 255.0)
     rounded = np.rint(clipped)
     return rounded.astype(np.uint8)

@@ -13,12 +13,18 @@ def clahe_norm(
         clipLimit=clipLimit,
         tileGridSize=tileGridSize,
     )
+    if image.ndim == 2:
+        return clahe.apply(image)
+
     ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
     ycrcb[..., 0] = clahe.apply(ycrcb[..., 0])
     return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
 
 
 def hist_norm(image: np.ndarray) -> np.ndarray:
+    if image.ndim == 2:
+        return cv2.equalizeHist(image)
+
     ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
     ycrcb[..., 0] = cv2.equalizeHist(ycrcb[..., 0])
     return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
@@ -31,7 +37,7 @@ def zscore_norm(
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
 
-    norm = image.astype(np.float32, copy=False)
+    norm = image.astype(np.float32)
     work = norm if norm.ndim == 3 else norm[..., None]
     mean = np.mean(work, axis=(0, 1), keepdims=True)
     std = np.std(work, axis=(0, 1), keepdims=True)
@@ -47,10 +53,11 @@ def zscore_norm(
 
 
 def minmax_norm(image: np.ndarray) -> np.ndarray:
-    return cv2.normalize(
+    result = cv2.normalize(
         image,
         None,
         alpha=0.0,
         beta=255.0,
         norm_type=cv2.NORM_MINMAX,
     )
+    return to_uint8(result)

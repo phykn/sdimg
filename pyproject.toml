@@ -12,3 +12,9 @@ dependencies = [
     "scikit-image",
     "concave-hull",
 ]
+
+[project.optional-dependencies]
+destripe = ["torch"]
+
+[tool.setuptools.packages.find]
+include = ["sdimg*"]

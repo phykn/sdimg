@@ -11,6 +11,11 @@ def split(
     overlap: float = 0.0,
     return_meta: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, object]]:
+    """Split an image into n×n patches.
+
+    When return_meta is True, returns (patches, meta) where meta contains
+    'shape' (original shape) and 'boxes' (list of (wmin, hmin, wmax, hmax)).
+    """
     data = src
 
     if n <= 0:
@@ -45,6 +50,11 @@ def merge(
     patches: list[np.ndarray],
     meta: dict[str, object],
 ) -> np.ndarray:
+    """Merge patches back into a single image using cosine-weighted blending.
+
+    Args:
+        meta: Metadata dict from split(return_meta=True) with 'shape' and 'boxes'.
+    """
     if len(patches) == 0:
         raise ValueError("patches must not be empty.")
 
@@ -118,7 +128,7 @@ def _merge_patches(
             raise ValueError("Each patch must be a numpy.ndarray.")
         if patch.shape[:2] != (hmax - hmin, wmax - wmin):
             raise ValueError("Patch shape does not match meta boxes.")
-        validated = patch.astype(np.float32, copy=False)
+        validated = patch.astype(np.float32)
         if validated.ndim == 2:
             validated = validated[..., None]
 
