@@ -1,11 +1,15 @@
 import cv2
 import numpy as np
 
+from .helper import to_mask
 
-def keep_largest_component(
+
+def pick_largest(
     mask: np.ndarray,
     connectivity: int = 8,
 ) -> np.ndarray:
+    mask = to_mask(mask)
+
     if np.count_nonzero(mask) == 0:
         return mask
 

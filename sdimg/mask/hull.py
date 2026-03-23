@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from concave_hull import concave_hull as build_concave_hull
 
-from .component import keep_largest_component
+from .component import pick_largest
 from .edge import extract_edge
+from .helper import to_mask
 
 
 def concave_hull(
@@ -11,10 +12,12 @@ def concave_hull(
     concavity: float = 2.0,
     length_threshold: float = 0.0,
 ) -> np.ndarray:
+    mask = to_mask(mask)
+
     if np.count_nonzero(mask) == 0:
         return mask
 
-    mask = keep_largest_component(mask)
+    mask = pick_largest(mask)
 
     edge = extract_edge(mask)
     points = np.column_stack(np.nonzero(edge))[:, ::-1]
@@ -35,6 +38,8 @@ def concave_hull(
 
 
 def convex_hull(mask: np.ndarray) -> np.ndarray:
+    mask = to_mask(mask)
+
     if np.count_nonzero(mask) == 0:
         return mask
 

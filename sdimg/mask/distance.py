@@ -1,19 +1,20 @@
 import cv2
 import numpy as np
+from typing import Literal
 
-from .pad import pad_1px, unpad_1px
+from .helper import to_mask
+from .pad import _pad_1px, _unpad_1px
+
+DistanceType = Literal["l1", "l2", "c"]
 
 
 def distance_transform(
     mask: np.ndarray,
-    distance_type: str = "l2",
+    distance_type: DistanceType = "l2",
     mask_size: int = 3,
 ) -> np.ndarray:
-    """Compute the distance transform of a binary mask.
+    mask = to_mask(mask)
 
-    Args:
-        distance_type: One of 'l1', 'l2', 'c'.
-    """
     if not np.any(mask):
         return np.zeros(mask.shape, dtype=np.float32)
 
@@ -26,12 +27,12 @@ def distance_transform(
     else:
         raise ValueError("distance_type must be one of: 'l1', 'l2', 'c'.")
 
-    padded = pad_1px(mask)
+    padded = _pad_1px(mask)
     distance = cv2.distanceTransform(
         padded,
         cv2_distance_type,
         mask_size,
         dstType=cv2.CV_32F,
     )
-    distance = unpad_1px(distance)
+    distance = _unpad_1px(distance)
     return distance

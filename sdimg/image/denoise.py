@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .helper import to_gray, to_rgb
+from .helper import is_image, to_gray, to_rgb
 
 
 def denoise(
@@ -11,6 +11,9 @@ def denoise(
     templateWindowSize: int = 7,
     searchWindowSize: int = 21,
 ) -> np.ndarray:
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
     if image.ndim == 3 and image.shape[2] == 3:
         return cv2.fastNlMeansDenoisingColored(
             image,
@@ -36,7 +39,21 @@ def destripe(
     n_tiles: int = 1,
     verbose: bool = False,
 ) -> np.ndarray:
-    import torch
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
+    if iterations <= 0:
+        raise ValueError("iterations must be greater than 0.")
+    if n_tiles <= 0:
+        raise ValueError("n_tiles must be greater than 0.")
+
+    try:
+        import torch
+    except ImportError as exc:
+        raise ImportError(
+            "destripe requires optional dependency 'torch'. "
+            "Install with: pip install .[destripe]"
+        ) from exc
 
     from .remove_stripe import UniversalStripeRemover
 
@@ -47,21 +64,26 @@ def destripe(
 
     remover = UniversalStripeRemover(mu1=mu1, mu2=mu2)
 
-    if n_tiles > 1:
-        res = remover.process_tiled(
-            x_torch,
-            n=n_tiles,
-            iterations=iterations,
-            verbose=verbose,
-        )
-    else:
-        res = remover.process(
-            x_torch,
-            iterations=iterations,
-            verbose=verbose,
-        )
+    try:
+        if n_tiles > 1:
+            res = remover.process_tiled(
+                x_torch,
+                n=n_tiles,
+                iterations=iterations,
+                verbose=verbose,
+            )
+        else:
+            res = remover.process(
+                x_torch,
+                iterations=iterations,
+                verbose=verbose,
+            )
+    except Exception as exc:
+        raise RuntimeError(f"destripe failed: {exc}") from exc
 
-    res_np = res.numpy().squeeze(0)
+    res_np = res.numpy()
+    if res_np.ndim == 3 and res_np.shape[0] == 1:
+        res_np = res_np.squeeze(0)
     res_np = (res_np * 255.0).clip(0, 255).astype(np.uint8)
 
     if is_gray:

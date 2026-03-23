@@ -14,10 +14,6 @@ def is_mask(mask: object) -> bool:
 
 
 def to_mask(mask: np.ndarray) -> np.ndarray:
-    """Convert a 2D array to a binary uint8 mask with values in {0, 1}.
-
-    Accepted input formats: bool, {0, 1}, or {0, 255}.
-    """
     if mask.ndim != 2:
         raise ValueError("Mask input must have shape (H, W).")
 
@@ -41,6 +37,7 @@ def get_coords(
     mask: np.ndarray,
     transpose: bool = False,
 ) -> np.ndarray:
+    mask = to_mask(mask)
     coords = np.argwhere(mask > 0)
 
     if transpose:
@@ -49,40 +46,70 @@ def get_coords(
     return coords
 
 
-def get_bbox(
-    mask: np.ndarray,
+def get_box_from_coords(
+    coords: np.ndarray,
 ) -> tuple[int, int, int, int] | None:
-    """Return the bounding box of nonzero pixels as (wmin, hmin, wmax, hmax), or None if empty."""
-    rows = np.any(mask, axis=1)
-    cols = np.any(mask, axis=0)
-
-    if not np.any(rows):
+    if coords.size == 0:
         return None
 
-    row_indices = np.where(rows)[0]
-    col_indices = np.where(cols)[0]
-    hmin = int(row_indices[0])
-    hmax = int(row_indices[-1]) + 1
-    wmin = int(col_indices[0])
-    wmax = int(col_indices[-1]) + 1
+    if coords.ndim != 2:
+        raise ValueError("coords must have shape (N, 2) or (2, N).")
+
+    if coords.shape[1] == 2:
+        h_coords = coords[:, 0]
+        w_coords = coords[:, 1]
+    elif coords.shape[0] == 2:
+        h_coords = coords[0, :]
+        w_coords = coords[1, :]
+    else:
+        raise ValueError("coords must have shape (N, 2) or (2, N).")
+
+    hmin = int(np.min(h_coords))
+    hmax = int(np.max(h_coords)) + 1
+    wmin = int(np.min(w_coords))
+    wmax = int(np.max(w_coords)) + 1
     return (wmin, hmin, wmax, hmax)
 
 
-def get_roi_area(mask: np.ndarray) -> int:
+def get_box_from_mask(
+    mask: np.ndarray,
+) -> tuple[int, int, int, int] | None:
+    mask = to_mask(mask)
+    return get_box_from_coords(get_coords(mask))
+
+
+def to_roi_box(
+    mask: np.ndarray,
+) -> dict[str, object] | None:
+    mask = to_mask(mask)
+    bbox = get_box_from_mask(mask)
+    if bbox is None:
+        return None
+
+    wmin, hmin, wmax, hmax = bbox
+    roi = mask[hmin:hmax, wmin:wmax].copy()
+    return {"roi": roi, "box": bbox}
+
+
+def get_roi_size(mask: np.ndarray) -> int:
+    mask = to_mask(mask)
     return int(np.count_nonzero(mask))
 
 
-def get_box_area(bbox: tuple[int, int, int, int] | None) -> int:
+def get_box_size(bbox: tuple[int, int, int, int] | None) -> int:
     if bbox is None:
         return 0
 
     wmin, hmin, wmax, hmax = bbox
+    if wmin >= wmax or hmin >= hmax:
+        raise ValueError("bbox must satisfy wmin < wmax and hmin < hmax.")
     return (wmax - wmin) * (hmax - hmin)
 
 
 def get_centroid(
     mask: np.ndarray,
 ) -> tuple[float, float] | None:
+    mask = to_mask(mask)
     coords = get_coords(mask)
 
     if coords.shape[0] == 0:

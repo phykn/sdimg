@@ -1,12 +1,11 @@
 import math
 import torch
 import torch.nn.functional as TF
+import numpy as np
 
-from typing import Any
 
-
-_N = 5
-_N_VARS = 1 + _N
+_N = 5  # Number of directions (horizontal, vertical, diagonal, etc.) used in stripe filtering
+_N_VARS = 1 + _N  # Total variables corresponding to original image + directional filters
 
 
 class UniversalStripeRemover:
@@ -26,13 +25,16 @@ class UniversalStripeRemover:
 
     def process(
         self,
-        image: torch.Tensor | Any,
+        image: torch.Tensor | np.ndarray,
         iterations: int = 500,
         tol: float = 1e-5,
         proj: bool = True,
         verbose: bool = True,
     ) -> torch.Tensor:
         x = self._to_tensor(x=image)
+        if x.dim() not in {2, 3}:
+            raise ValueError("image must have shape (H, W) or (N, H, W).")
+
         squeeze = x.dim() == 2
 
         if squeeze:
@@ -46,7 +48,7 @@ class UniversalStripeRemover:
 
     def process_tiled(
         self,
-        image: torch.Tensor | Any,
+        image: torch.Tensor | np.ndarray,
         n: int = 1,
         iterations: int = 500,
         tol: float = 1e-5,
@@ -55,6 +57,8 @@ class UniversalStripeRemover:
         verbose: bool = True,
     ) -> torch.Tensor:
         data = self._to_tensor(x=image)
+        if data.dim() not in {2, 3}:
+            raise ValueError("image must have shape (H, W) or (1, H, W).")
 
         if data.dim() == 3:
             data = data.squeeze(0)
@@ -123,15 +127,15 @@ class UniversalStripeRemover:
         u = data.clone()
         s = [torch.zeros_like(input=data) for _ in range(_N)]
 
-        ph, ph_ = self._zeros2(ref=data)
-        pv, pv_ = self._zeros2(ref=data)
+        ph, ph_bar = self._zeros2(ref=data)
+        pv, pv_bar = self._zeros2(ref=data)
 
-        q, q_ = zip(*(self._zeros2(ref=data) for _ in range(_N)))
-        r, r_ = zip(*(self._zeros2(ref=data) for _ in range(_N)))
-        q_list = list(q)
-        q_ext = list(q_)
-        r_list = list(r)
-        r_ext = list(r_)
+        q_init, q_init_bar = zip(*(self._zeros2(ref=data) for _ in range(_N)))
+        r_init, r_init_bar = zip(*(self._zeros2(ref=data) for _ in range(_N)))
+        q_state = list(q_init)
+        q_bar = list(q_init_bar)
+        r_state = list(r_init)
+        r_bar = list(r_init_bar)
 
         prev_u = u.clone()
         buf = torch.empty_like(input=data)
@@ -141,11 +145,11 @@ class UniversalStripeRemover:
                 if verbose:
                     print(f"\rIteration: {k + 1} / {iterations}", end="")
 
-                self._adj_grad(target=u, ph=ph_, pv=pv_, a=ts)
+                self._adj_grad(target=u, ph=ph_bar, pv=pv_bar, a=ts)
 
                 for i in range(_N):
-                    self._adj_dir(target=s[i], q=q_ext[i], mode=i, a=ts)
-                    s[i].sub_(r_ext[i], alpha=ts)
+                    self._adj_dir(target=s[i], q=q_bar[i], mode=i, a=ts)
+                    s[i].sub_(r_bar[i], alpha=ts)
 
                 buf.copy_(data)
                 for si in s:
@@ -163,8 +167,8 @@ class UniversalStripeRemover:
                         si.add_(buf)
                     u.clamp_(min=0, max=1)
 
-                ph_.copy_(ph)
-                pv_.copy_(pv)
+                ph_bar.copy_(ph)
+                pv_bar.copy_(pv)
 
                 zh = ph + self._fwd(x=u, dim=1)
                 zv = pv + self._fwd(x=u, dim=2)
@@ -172,19 +176,19 @@ class UniversalStripeRemover:
                 scale = (lam / norm).clamp_(max=1.0)
                 ph = zh.mul_(scale)
                 pv = zv.mul_(scale)
-                ph_.mul_(-1).add_(ph, alpha=2)
-                pv_.mul_(-1).add_(pv, alpha=2)
+                ph_bar.mul_(-1).add_(ph, alpha=2)
+                pv_bar.mul_(-1).add_(pv, alpha=2)
 
                 for i in range(_N):
-                    q_ext[i].copy_(q_list[i])
-                    q_list[i] = (q_list[i] + self._dir_diff(x=s[i], mode=i)).clamp(
+                    q_bar[i].copy_(q_state[i])
+                    q_state[i] = (q_state[i] + self._dir_diff(x=s[i], mode=i)).clamp(
                         min=-qc, max=qc
                     )
-                    q_ext[i].mul_(-1).add_(q_list[i], alpha=2)
+                    q_bar[i].mul_(-1).add_(q_state[i], alpha=2)
 
-                    r_ext[i].copy_(r_list[i])
-                    r_list[i] = (r_list[i] + s[i]).clamp(min=-rc, max=rc)
-                    r_ext[i].mul_(-1).add_(r_list[i], alpha=2)
+                    r_bar[i].copy_(r_state[i])
+                    r_state[i] = (r_state[i] + s[i]).clamp(min=-rc, max=rc)
+                    r_bar[i].mul_(-1).add_(r_state[i], alpha=2)
 
                 if k > 0 and k % 20 == 0:
                     torch.sub(input=u, other=prev_u, out=buf)
@@ -286,7 +290,7 @@ class UniversalStripeRemover:
 
     def _to_tensor(
         self,
-        x: Any,
+        x: torch.Tensor | np.ndarray,
     ) -> torch.Tensor:
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(data=x)

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .helper import to_uint8
+from .helper import is_image, to_uint8
 
 
 def clahe_norm(
@@ -9,6 +9,9 @@ def clahe_norm(
     clipLimit: float = 40.0,
     tileGridSize: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
     clahe = cv2.createCLAHE(
         clipLimit=clipLimit,
         tileGridSize=tileGridSize,
@@ -22,6 +25,9 @@ def clahe_norm(
 
 
 def hist_norm(image: np.ndarray) -> np.ndarray:
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
     if image.ndim == 2:
         return cv2.equalizeHist(image)
 
@@ -34,6 +40,9 @@ def zscore_norm(
     image: np.ndarray,
     std_range: float = 3.0,
 ) -> np.ndarray:
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
 
@@ -43,16 +52,22 @@ def zscore_norm(
     std = np.std(work, axis=(0, 1), keepdims=True)
     safe_std = np.where(std == 0.0, 1.0, std)
 
-    zscore = (work - mean) / safe_std
-    clipped = np.clip(zscore, -std_range, std_range)
-    scaled = (clipped + std_range) / (2.0 * std_range) * 255.0
-    scaled = np.where(std == 0.0, 127.5, scaled)
+    work -= mean
+    work /= safe_std
+    np.clip(work, -std_range, std_range, out=work)
+    
+    work += std_range
+    work *= (255.0 / (2.0 * std_range))
+    scaled = np.where(std == 0.0, 127.5, work)
 
     result = to_uint8(scaled)
     return result if norm.ndim == 3 else result[..., 0]
 
 
 def minmax_norm(image: np.ndarray) -> np.ndarray:
+    if not is_image(image):
+        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+
     result = cv2.normalize(
         image,
         None,

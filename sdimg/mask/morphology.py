@@ -1,20 +1,21 @@
 import cv2
 import numpy as np
+from typing import Literal
 
-from .pad import pad_1px, unpad_1px
+from .helper import to_mask
+from .pad import _pad_1px, _unpad_1px
+
+MorphologyOp = Literal["open", "close", "erode", "dilate"]
 
 
 def morphology(
     mask: np.ndarray,
-    op: str,
+    op: MorphologyOp,
     ksize: tuple[int, int] = (3, 3),
     iterations: int = 1,
 ) -> np.ndarray:
-    """Apply a morphological operation to a binary mask.
+    mask = to_mask(mask)
 
-    Args:
-        op: One of 'open', 'close', 'erode', 'dilate'.
-    """
     ops = {
         "open": cv2.MORPH_OPEN,
         "close": cv2.MORPH_CLOSE,
@@ -28,7 +29,7 @@ def morphology(
         return mask
 
     kernel = np.ones(ksize, dtype=np.uint8)
-    padded = pad_1px(mask)
+    padded = _pad_1px(mask)
 
     if op == "erode":
         result = cv2.erode(padded, kernel, iterations=iterations)
@@ -42,5 +43,5 @@ def morphology(
             iterations=iterations,
         )
 
-    result = unpad_1px(result)
+    result = _unpad_1px(result)
     return (result > 0).astype(np.uint8)

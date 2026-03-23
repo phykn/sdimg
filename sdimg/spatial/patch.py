@@ -11,11 +11,11 @@ def split(
     overlap: float = 0.0,
     return_meta: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, object]]:
-    """Split an image into n×n patches.
+    if not isinstance(src, np.ndarray):
+        raise TypeError("src must be a numpy.ndarray.")
+    if src.ndim not in {2, 3}:
+        raise ValueError("src must have shape (H, W) or (H, W, C).")
 
-    When return_meta is True, returns (patches, meta) where meta contains
-    'shape' (original shape) and 'boxes' (list of (wmin, hmin, wmax, hmax)).
-    """
     data = src
 
     if n <= 0:
@@ -50,11 +50,6 @@ def merge(
     patches: list[np.ndarray],
     meta: dict[str, object],
 ) -> np.ndarray:
-    """Merge patches back into a single image using cosine-weighted blending.
-
-    Args:
-        meta: Metadata dict from split(return_meta=True) with 'shape' and 'boxes'.
-    """
     if len(patches) == 0:
         raise ValueError("patches must not be empty.")
 
@@ -62,6 +57,13 @@ def merge(
         raise ValueError("meta must include shape and boxes.")
     shape = meta["shape"]
     boxes = meta["boxes"]
+
+    if not isinstance(shape, tuple):
+        raise ValueError("meta['shape'] must be a tuple.")
+    if len(shape) not in {2, 3}:
+        raise ValueError("meta['shape'] must have length 2 or 3.")
+    if not isinstance(boxes, list):
+        raise ValueError("meta['boxes'] must be a list.")
 
     if len(patches) != len(boxes):
         raise ValueError("patches and meta boxes length must match.")
@@ -124,11 +126,18 @@ def _merge_patches(
     weight_cache: dict[tuple[int, int], np.ndarray] = {}
 
     for patch, (wmin, hmin, wmax, hmax) in zip(patches, boxes):
+        if not all(isinstance(v, int) for v in (wmin, hmin, wmax, hmax)):
+            raise ValueError("Each box must be a tuple of 4 integers.")
+        if wmin < 0 or hmin < 0 or wmax > shape[1] or hmax > shape[0]:
+            raise ValueError("Each box must be within output shape bounds.")
+        if wmin >= wmax or hmin >= hmax:
+            raise ValueError("Each box must satisfy wmin < wmax and hmin < hmax.")
+
         if not isinstance(patch, np.ndarray):
             raise ValueError("Each patch must be a numpy.ndarray.")
         if patch.shape[:2] != (hmax - hmin, wmax - wmin):
             raise ValueError("Patch shape does not match meta boxes.")
-        validated = patch.astype(np.float32)
+        validated = patch.astype(np.float32, copy=False)
         if validated.ndim == 2:
             validated = validated[..., None]
 
@@ -155,8 +164,8 @@ def _merge_patches(
         merged[hmin:hmax, wmin:wmax, :] += validated * patch_weights
         weights[hmin:hmax, wmin:wmax, :] += patch_weights
 
-    weights = np.maximum(weights, 1e-6)
-    merged = merged / weights
+    np.maximum(weights, 1e-6, out=weights)
+    merged /= weights
     if len(shape) == 2:
         return merged[..., 0]
     return merged

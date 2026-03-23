@@ -18,6 +18,10 @@ def otsu_threshold(
         raise ValueError("scale must be greater than or equal to 0.")
 
     gray = to_gray(image)
-    threshold = float(threshold_otsu(gray))
+    try:
+        threshold = float(threshold_otsu(gray))
+    except Exception as exc:
+        raise RuntimeError(f"otsu_threshold failed: {exc}") from exc
+
     adjusted_threshold = threshold * scale
     return (gray > adjusted_threshold).astype(np.uint8)

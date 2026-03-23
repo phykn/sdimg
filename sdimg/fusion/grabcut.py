@@ -3,7 +3,7 @@ import numpy as np
 
 from ..image.helper import to_gray
 from ..spatial.crop import crop
-from ..mask.helper import get_roi_area
+from ..mask.helper import get_roi_size, to_mask
 
 
 def _get_k(shape: tuple[int, int]) -> int:
@@ -93,8 +93,12 @@ def grabcut(
         raise ValueError("iter_count must be greater than 0.")
     if margin <= 0:
         raise ValueError("margin must be greater than 0.")
+    if tol < 0:
+        raise ValueError("tol must be greater than or equal to 0.")
 
-    orig_area = float(get_roi_area(roi))
+    roi = to_mask(roi)
+
+    orig_area = float(get_roi_size(roi))
     if orig_area == 0:
         return roi
 
@@ -106,43 +110,46 @@ def grabcut(
             f"roi shape {roi.shape[:2]}."
         )
 
-    image = cv2.copyMakeBorder(
-        src=image,
-        top=margin,
-        bottom=margin,
-        left=margin,
-        right=margin,
-        borderType=cv2.BORDER_REFLECT,
-    )
-    roi = cv2.copyMakeBorder(
-        src=roi,
-        top=margin,
-        bottom=margin,
-        left=margin,
-        right=margin,
-        borderType=cv2.BORDER_CONSTANT,
-        value=0,
-    )
+    try:
+        image = cv2.copyMakeBorder(
+            src=image,
+            top=margin,
+            bottom=margin,
+            left=margin,
+            right=margin,
+            borderType=cv2.BORDER_REFLECT,
+        )
+        roi = cv2.copyMakeBorder(
+            src=roi,
+            top=margin,
+            bottom=margin,
+            left=margin,
+            right=margin,
+            borderType=cv2.BORDER_CONSTANT,
+            value=0,
+        )
 
-    feat = _build_img(image=image, roi=roi)
-    gc_mask = _build_mask(roi=roi)
+        feat = _build_img(image=image, roi=roi)
+        gc_mask = _build_mask(roi=roi)
 
-    bgd = np.zeros((1, 65), dtype=np.float64)
-    fgd = np.zeros((1, 65), dtype=np.float64)
-    cv2.grabCut(
-        img=feat,
-        mask=gc_mask,
-        rect=None,
-        bgdModel=bgd,
-        fgdModel=fgd,
-        iterCount=iter_count,
-        mode=cv2.GC_INIT_WITH_MASK,
-    )
+        bgd = np.zeros((1, 65), dtype=np.float64)
+        fgd = np.zeros((1, 65), dtype=np.float64)
+        cv2.grabCut(
+            img=feat,
+            mask=gc_mask,
+            rect=None,
+            bgdModel=bgd,
+            fgdModel=fgd,
+            iterCount=iter_count,
+            mode=cv2.GC_INIT_WITH_MASK,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"grabcut failed: {exc}") from exc
 
     out = np.isin(gc_mask, (cv2.GC_FGD, cv2.GC_PR_FGD)).astype(np.uint8)
     out_final = out[margin:-margin, margin:-margin]
 
-    new_area = float(get_roi_area(out_final))
+    new_area = float(get_roi_size(out_final))
     if abs(new_area - orig_area) / orig_area > tol:
         return roi[margin:-margin, margin:-margin]
 

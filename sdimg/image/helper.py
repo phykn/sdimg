@@ -14,6 +14,9 @@ def is_image(image: object) -> bool:
 
 
 def to_rgb(image: np.ndarray) -> np.ndarray:
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Image input must be a numpy.ndarray.")
+
     if image.ndim == 2:
         rgb = np.repeat(image[..., None], 3, axis=2)
         return to_uint8(rgb)
@@ -35,6 +38,9 @@ def to_rgb(image: np.ndarray) -> np.ndarray:
 
 
 def to_gray(image: np.ndarray) -> np.ndarray:
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Image input must be a numpy.ndarray.")
+
     if image.ndim == 2:
         gray = image
     else:
@@ -48,16 +54,26 @@ def to_gray(image: np.ndarray) -> np.ndarray:
         if channels <= 2:
             gray = image[..., 0]
         elif channels == 3:
-            rgb = image.astype(np.float32)
-            gray = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
+            gray = image[..., 0] * np.float32(0.299)
+            gray += image[..., 1] * np.float32(0.587)
+            gray += image[..., 2] * np.float32(0.114)
         else:
-            rgb = image[..., :3].astype(np.float32)
-            gray = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
+            gray = image[..., 0] * np.float32(0.299)
+            gray += image[..., 1] * np.float32(0.587)
+            gray += image[..., 2] * np.float32(0.114)
 
     return to_uint8(gray)
 
 
 def to_uint8(image: np.ndarray) -> np.ndarray:
-    clipped = np.clip(image.astype(np.float32), 0.0, 255.0)
-    rounded = np.rint(clipped)
-    return rounded.astype(np.uint8)
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Image input must be a numpy.ndarray.")
+
+    if image.dtype == np.uint8:
+        return image
+
+    if np.issubdtype(image.dtype, np.floating):
+        clipped = np.clip(image, 0.0, 255.0)
+        return np.rint(clipped).astype(np.uint8)
+
+    return np.clip(image, 0, 255).astype(np.uint8)

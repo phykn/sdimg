@@ -1,10 +1,19 @@
 import numpy as np
+from typing import Literal
+
+Rotation = Literal[0, 90, 180, 270]
+FlipDirection = Literal["horizontal", "vertical", "transpose"]
 
 
 def rotate(
     src: np.ndarray,
-    rotation: int = 0,
+    rotation: Rotation = 0,
 ) -> np.ndarray:
+    if not isinstance(src, np.ndarray):
+        raise TypeError("src must be a numpy.ndarray.")
+    if src.ndim not in {2, 3}:
+        raise ValueError("src must have shape (H, W) or (H, W, C).")
+
     if rotation not in {0, 90, 180, 270}:
         raise ValueError("rotation must be one of 0, 90, 180, 270.")
     return np.rot90(src, k=rotation // 90)
@@ -12,8 +21,13 @@ def rotate(
 
 def flip(
     src: np.ndarray,
-    direction: str,
+    direction: FlipDirection,
 ) -> np.ndarray:
+    if not isinstance(src, np.ndarray):
+        raise TypeError("src must be a numpy.ndarray.")
+    if src.ndim not in {2, 3}:
+        raise ValueError("src must have shape (H, W) or (H, W, C).")
+
     if direction == "horizontal":
         return np.flip(src, axis=1)
     if direction == "vertical":

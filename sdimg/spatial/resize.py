@@ -8,6 +8,11 @@ def resize(
     width: int | None = None,
     interpolation: int = cv2.INTER_CUBIC,
 ) -> np.ndarray:
+    if not isinstance(src, np.ndarray):
+        raise TypeError("src must be a numpy.ndarray.")
+    if src.ndim not in {2, 3}:
+        raise ValueError("src must have shape (H, W) or (H, W, C).")
+
     dst_h, dst_w = _target_size(
         shape=src.shape[:2],
         height=height,
@@ -25,6 +30,11 @@ def resize_keep_ratio(
     long_side: int,
     interpolation: int = cv2.INTER_CUBIC,
 ) -> np.ndarray:
+    if not isinstance(src, np.ndarray):
+        raise TypeError("src must be a numpy.ndarray.")
+    if src.ndim not in {2, 3}:
+        raise ValueError("src must have shape (H, W) or (H, W, C).")
+
     dst_h, dst_w = _long_side_size(
         shape=src.shape[:2],
         long_side=long_side,

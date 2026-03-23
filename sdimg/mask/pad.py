@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def pad_1px(mask: np.ndarray) -> np.ndarray:
+def _pad_1px(mask: np.ndarray) -> np.ndarray:
     return np.pad(
         mask,
         ((1, 1), (1, 1)),
@@ -10,5 +10,5 @@ def pad_1px(mask: np.ndarray) -> np.ndarray:
     )
 
 
-def unpad_1px(mask: np.ndarray) -> np.ndarray:
+def _unpad_1px(mask: np.ndarray) -> np.ndarray:
     return mask[1:-1, 1:-1]
