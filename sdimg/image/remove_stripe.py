@@ -29,7 +29,7 @@ class UniversalStripeRemover:
         iterations: int = 500,
         tol: float = 1e-5,
         proj: bool = True,
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> torch.Tensor:
         x = self._to_tensor(x=image)
         if x.dim() not in {2, 3}:
@@ -54,14 +54,15 @@ class UniversalStripeRemover:
         tol: float = 1e-5,
         overlap: int = 64,
         proj: bool = True,
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> torch.Tensor:
         data = self._to_tensor(x=image)
-        if data.dim() not in {2, 3}:
-            raise ValueError("image must have shape (H, W) or (1, H, W).")
-
-        if data.dim() == 3:
+        if data.dim() == 2:
+            pass
+        elif data.dim() == 3 and data.shape[0] == 1:
             data = data.squeeze(0)
+        else:
+            raise ValueError("image must have shape (H, W) or (1, H, W).")
 
         if n <= 1:
             return self.process(

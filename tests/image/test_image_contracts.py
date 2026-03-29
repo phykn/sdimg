@@ -15,6 +15,7 @@ from sdimg.image import (
     zscore_norm,
 )
 from sdimg.image.denoise import denoise, destripe
+from sdimg.image.remove_stripe import UniversalStripeRemover
 
 
 def test_to_uint8_clips_and_rounds() -> None:
@@ -100,6 +101,16 @@ def test_destripe_wraps_runtime_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     src = np.zeros((8, 8), dtype=np.uint8)
     with pytest.raises(RuntimeError, match="destripe failed"):
         destripe(src, iterations=1, n_tiles=1, verbose=False)
+
+
+@pytest.mark.requires_torch
+def test_process_tiled_rejects_batched_input_with_n_not_one() -> None:
+    torch = pytest.importorskip("torch")
+    src = torch.zeros((2, 8, 8), dtype=torch.float32)
+    remover = UniversalStripeRemover()
+
+    with pytest.raises(ValueError, match=r"\(H, W\) or \(1, H, W\)"):
+        remover.process_tiled(src, n=2, iterations=1, verbose=False)
 
 
 def test_destripe_rejects_non_positive_iterations() -> None:

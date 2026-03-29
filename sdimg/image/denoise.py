@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import torch
 
 from .._core.validate import ensure_image
 from .helper import to_gray, to_rgb
@@ -46,14 +47,6 @@ def destripe(
         raise ValueError("iterations must be greater than 0.")
     if n_tiles <= 0:
         raise ValueError("n_tiles must be greater than 0.")
-
-    try:
-        import torch
-    except ImportError as exc:
-        raise ImportError(
-            "destripe requires dependency 'torch'. "
-            "Install torch in your environment and reinstall sdimg."
-        ) from exc
 
     is_gray = image.ndim == 2
     gray = to_gray(image)
