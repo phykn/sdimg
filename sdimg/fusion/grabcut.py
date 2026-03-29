@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+from .._core.validate import ensure_image
 from ..image.helper import to_gray
 from ..spatial.crop import crop
 from ..mask.helper import get_roi_size, to_mask
@@ -96,6 +97,7 @@ def grabcut(
     if tol < 0:
         raise ValueError("tol must be greater than or equal to 0.")
 
+    image = ensure_image(image, name="image")
     roi = to_mask(roi)
 
     orig_area = float(get_roi_size(roi))

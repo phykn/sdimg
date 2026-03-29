@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
 
-from .helper import is_image, to_gray, to_rgb
+from .._core.validate import ensure_image
+from .helper import to_gray, to_rgb
+from .remove_stripe import UniversalStripeRemover
 
 
 def denoise(
@@ -11,8 +13,7 @@ def denoise(
     templateWindowSize: int = 7,
     searchWindowSize: int = 21,
 ) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     if image.ndim == 3 and image.shape[2] == 3:
         return cv2.fastNlMeansDenoisingColored(
@@ -39,8 +40,7 @@ def destripe(
     n_tiles: int = 1,
     verbose: bool = False,
 ) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     if iterations <= 0:
         raise ValueError("iterations must be greater than 0.")
@@ -51,11 +51,9 @@ def destripe(
         import torch
     except ImportError as exc:
         raise ImportError(
-            "destripe requires optional dependency 'torch'. "
-            "Install with: pip install .[destripe]"
+            "destripe requires dependency 'torch'. "
+            "Install torch in your environment and reinstall sdimg."
         ) from exc
-
-    from .remove_stripe import UniversalStripeRemover
 
     is_gray = image.ndim == 2
     gray = to_gray(image)

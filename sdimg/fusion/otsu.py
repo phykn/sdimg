@@ -1,6 +1,7 @@
+import cv2
 import numpy as np
-from skimage.filters import threshold_otsu
 
+from .._core.validate import ensure_image
 from ..image.helper import to_gray
 
 
@@ -17,11 +18,17 @@ def otsu_threshold(
     if scale < 0:
         raise ValueError("scale must be greater than or equal to 0.")
 
+    image = ensure_image(image, name="image")
     gray = to_gray(image)
     try:
-        threshold = float(threshold_otsu(gray))
+        threshold, _ = cv2.threshold(
+            gray,
+            0,
+            255,
+            cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+        )
     except Exception as exc:
         raise RuntimeError(f"otsu_threshold failed: {exc}") from exc
 
-    adjusted_threshold = threshold * scale
+    adjusted_threshold = float(threshold) * scale
     return (gray > adjusted_threshold).astype(np.uint8)

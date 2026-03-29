@@ -1,21 +1,19 @@
 import numpy as np
 
+from .._core.validate import ensure_mask, ensure_ndarray
+
 
 def is_mask(mask: object) -> bool:
-    if not isinstance(mask, np.ndarray):
-        return False
-
     try:
         to_mask(mask)
-    except ValueError:
+    except (TypeError, ValueError):
         return False
 
     return True
 
 
-def to_mask(mask: np.ndarray) -> np.ndarray:
-    if mask.ndim != 2:
-        raise ValueError("Mask input must have shape (H, W).")
+def to_mask(mask: object) -> np.ndarray:
+    mask = ensure_mask(mask, name="Mask input")
 
     if mask.dtype == np.bool_:
         return mask.astype(np.uint8)
@@ -49,6 +47,8 @@ def get_coords(
 def get_box_from_coords(
     coords: np.ndarray,
 ) -> tuple[int, int, int, int] | None:
+    coords = ensure_ndarray(coords, name="coords")
+
     if coords.size == 0:
         return None
 

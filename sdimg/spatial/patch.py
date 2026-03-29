@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 
+from .._core.validate import ensure_src
 from ..image.helper import to_uint8
 
 
@@ -11,12 +12,7 @@ def split(
     overlap: float = 0.0,
     return_meta: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, object]]:
-    if not isinstance(src, np.ndarray):
-        raise TypeError("src must be a numpy.ndarray.")
-    if src.ndim not in {2, 3}:
-        raise ValueError("src must have shape (H, W) or (H, W, C).")
-
-    data = src
+    data = ensure_src(src, name="src")
 
     if n <= 0:
         raise ValueError("n must be greater than 0.")

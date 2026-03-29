@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-from .helper import is_image, to_uint8
+from .._core.validate import ensure_image
+from .helper import to_uint8
 
 
 def clahe_norm(
@@ -9,8 +10,7 @@ def clahe_norm(
     clipLimit: float = 40.0,
     tileGridSize: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     clahe = cv2.createCLAHE(
         clipLimit=clipLimit,
@@ -25,8 +25,7 @@ def clahe_norm(
 
 
 def hist_norm(image: np.ndarray) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     if image.ndim == 2:
         return cv2.equalizeHist(image)
@@ -40,8 +39,7 @@ def zscore_norm(
     image: np.ndarray,
     std_range: float = 3.0,
 ) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
@@ -65,8 +63,7 @@ def zscore_norm(
 
 
 def minmax_norm(image: np.ndarray) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     result = cv2.normalize(
         image,

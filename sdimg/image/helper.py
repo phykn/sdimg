@@ -1,16 +1,14 @@
 import numpy as np
 
+from .._core.validate import ensure_image
+
 
 def is_image(image: object) -> bool:
-    if not isinstance(image, np.ndarray):
+    try:
+        ensure_image(image, name="image")
+    except (TypeError, ValueError):
         return False
-
-    if image.ndim == 2:
-        return True
-    if image.ndim != 3:
-        return False
-
-    return image.shape[2] in {1, 2, 3, 4}
+    return True
 
 
 def to_rgb(image: np.ndarray) -> np.ndarray:

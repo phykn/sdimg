@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from .._core.validate import ensure_src
+
 
 def resize(
     src: np.ndarray,
@@ -8,10 +10,7 @@ def resize(
     width: int | None = None,
     interpolation: int = cv2.INTER_CUBIC,
 ) -> np.ndarray:
-    if not isinstance(src, np.ndarray):
-        raise TypeError("src must be a numpy.ndarray.")
-    if src.ndim not in {2, 3}:
-        raise ValueError("src must have shape (H, W) or (H, W, C).")
+    src = ensure_src(src, name="src")
 
     dst_h, dst_w = _target_size(
         shape=src.shape[:2],
@@ -30,10 +29,7 @@ def resize_keep_ratio(
     long_side: int,
     interpolation: int = cv2.INTER_CUBIC,
 ) -> np.ndarray:
-    if not isinstance(src, np.ndarray):
-        raise TypeError("src must be a numpy.ndarray.")
-    if src.ndim not in {2, 3}:
-        raise ValueError("src must have shape (H, W) or (H, W, C).")
+    src = ensure_src(src, name="src")
 
     dst_h, dst_w = _long_side_size(
         shape=src.shape[:2],

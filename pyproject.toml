@@ -9,17 +9,22 @@ requires-python = ">=3.12"
 dependencies = [
     "numpy",
     "opencv-python-headless",
-    "scikit-image",
     "concave-hull",
+    "torch>=2.6",
 ]
 
-[project.optional-dependencies]
-destripe = ["torch"]
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 [tool.setuptools.packages.find]
 include = ["sdimg*"]
 
 [tool.pytest.ini_options]
 markers = [
-    "optional_torch: tests requiring torch optional dependency",
+    "requires_torch: tests requiring torch dependency",
 ]

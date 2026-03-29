@@ -1,14 +1,13 @@
 import numpy as np
 
+from .._core.validate import ensure_src
+
 
 def pad_to_square(
     src: np.ndarray,
     return_box: bool = False,
 ) -> np.ndarray | tuple[np.ndarray, tuple[int, int, int, int]]:
-    if not isinstance(src, np.ndarray):
-        raise TypeError("src must be a numpy.ndarray.")
-    if src.ndim not in {2, 3}:
-        raise ValueError("src must have shape (H, W) or (H, W, C).")
+    src = ensure_src(src, name="src")
 
     height, width = src.shape[:2]
     bottom = max(0, width - height)

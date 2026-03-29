@@ -1,17 +1,6 @@
 # sdimg
 
-A small, function-based image and mask processing library built around `numpy.ndarray`.
-
-No large abstractions — just a set of composable functions for preprocessing, spatial transforms, mask cleanup, and fusion workflows.
-
-## Scope
-
-| Module      | Functions                                                                                                                                                                                                                                                                                     |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Image**   | `clahe_norm`, `hist_norm`, `zscore_norm`, `minmax_norm`, `adjust_brightness_contrast`, `gaussian_blur`, `median_blur`, `sharpen`, `denoise`, `destripe`, `is_image`, `to_gray`, `to_rgb`, `to_uint8`                                                                                          |
-| **Mask**    | `morphology` (open / close / erode / dilate), `fill_holes`, `pick_largest`, `concave_hull`, `convex_hull`, `extract_edge`, `distance_transform`, `to_roi_box`, `to_mask`, `is_mask`, `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size` |
-| **Spatial** | `resize`, `resize_keep_ratio`, `rotate`, `flip`, `pad_to_square`, `crop`, `split`, `merge`                                                                                                                                                                                                    |
-| **Fusion**  | `otsu_threshold`, `grabcut`                                                                                                                                                                                                                                                                   |
+Small, function-based image and mask processing library built on `numpy.ndarray`.
 
 ## Install
 
@@ -19,40 +8,40 @@ No large abstractions — just a set of composable functions for preprocessing, 
 pip install .
 ```
 
-For destripe support (requires torch):
+## Modules
 
-```bash
-pip install .[destripe]
-```
+- `sdimg.image`: normalize, blur, denoise, sharpen, color helpers
+- `sdimg.mask`: binary mask cleanup, hull/edge/distance, bbox/ROI helpers
+- `sdimg.spatial`: resize, crop, rotate/flip, pad, split/merge patches
+- `sdimg.fusion`: `otsu_threshold` (OpenCV Otsu), `grabcut`
 
-## Data Rules
+## Core Contracts
 
-- Inputs must be `numpy.ndarray`
-- Images are returned as `np.uint8`
-- Masks are returned as binary `np.uint8` with values in `{0, 1}`
-- Bounding boxes follow `(wmin, hmin, wmax, hmax)` format
-- Empty-mask contracts:
-  `to_roi_box`, `get_box_from_mask`, `get_box_from_coords`, `get_centroid` return `None`
+- Input arrays must be `numpy.ndarray`
+- Images: shape `(H, W)` or `(H, W, C)` with `C in 1..4`
+- Masks: shape `(H, W)`, binary values (`bool`, `{0,1}`, `{0,255}`)
+- Output images are `np.uint8`
+- Output masks are binary `np.uint8` in `{0, 1}`
+- BBox format: `(wmin, hmin, wmax, hmax)`
+- Empty-mask returns `None` for:
+  - `to_roi_box`
+  - `get_box_from_mask`
+  - `get_box_from_coords`
+  - `get_centroid`
 
-## Exception Rules
-- **TypeError**: Raised when the input array is not a valid `numpy.ndarray`.
-- **ValueError**: Raised when the input array has an invalid shape, dimension (e.g. 4D mask), or out-of-bounds parameters.
-- **RuntimeError**: Deeply wrapped C-level crashes from `cv2` or `skimage` functions or external torch failures.
+## Error Policy
 
-## Requirements
+- `TypeError`: wrong input type (non-`numpy.ndarray`)
+- `ValueError`: invalid shape, invalid params, invalid mask values, invalid bbox
+- `RuntimeError`: wrapped lower-level failures (`cv2`, internal processing)
 
-- Python 3.12+
-- numpy, opencv-python-headless, scikit-image, concave-hull
-- torch (optional, for `destripe`)
+## Internal Structure
 
-> **Note on `destripe`**: The `destripe` function requires `torch` to run. If `torch` is not installed, calling `destripe` will raise an `ImportError`. It automatically falls back to CPU if no NVIDIA CUDA device is found, which can be computationally intensive for large images.
+- `sdimg/_core/validate.py`: shared validators (`ensure_src`, `ensure_image`, `ensure_mask`, `ensure_bbox`)
+- `sdimg/_core/types.py`: shared type aliases
+- `sdimg/_core/errors.py`: shared error helpers
 
-## Versioning Policy
-
-- We follow **Semantic Versioning (SemVer)**. 
-- The recent `v0.1.0` to `v0.2.0` codebase refactoring separated input validation types (`TypeError` vs `ValueError`), improved in-place memory handling (avoiding unnecessary `astype(np.float32)` copies), and completely unified error throwing.
-
-## Example
+## Quick Example
 
 ```python
 import numpy as np
@@ -60,7 +49,7 @@ from sdimg.image import hist_norm, gaussian_blur
 from sdimg.mask import morphology, to_roi_box
 from sdimg.fusion import grabcut
 
-image = np.random.randint(0, 256, size=(128, 128, 3), dtype=np.uint8)
+image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
 mask = np.zeros((128, 128), dtype=np.uint8)
 mask[32:96, 40:88] = 1
 
@@ -68,11 +57,13 @@ image = hist_norm(image)
 image = gaussian_blur(image, (5, 5), 1.2)
 mask = morphology(mask, "open", (3, 3), 1)
 
-result = to_roi_box(mask)
-if result is not None:
-    refined = grabcut(image=image, roi=result["roi"], box=result["box"])
+roi_box = to_roi_box(mask)
+if roi_box is not None:
+    refined = grabcut(image=image, roi=roi_box["roi"], box=roi_box["box"])
 ```
 
-## Notebook
+## Local Test
 
-`test.ipynb` — visual check of the main functions using `asset/sample_image.png` and `asset/sample_mask.png`.
+```bash
+PYTHONPATH=. pytest -q
+```

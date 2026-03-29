@@ -19,13 +19,13 @@ def test_otsu_threshold_rejects_negative_scale() -> None:
         otsu_threshold(src, scale=-0.1)
 
 
-def test_otsu_threshold_wraps_skimage_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_otsu_threshold_wraps_cv2_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     import sdimg.fusion.otsu as otsu_module
 
-    def _boom(_: np.ndarray) -> float:
+    def _boom(*args: object, **kwargs: object) -> tuple[float, np.ndarray]:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(otsu_module, "threshold_otsu", _boom)
+    monkeypatch.setattr(otsu_module.cv2, "threshold", _boom)
 
     with pytest.raises(RuntimeError, match="otsu_threshold failed"):
         otsu_threshold(np.zeros((4, 4), dtype=np.uint8))

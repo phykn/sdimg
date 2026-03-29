@@ -63,8 +63,8 @@ def test_minmax_norm_returns_uint8() -> None:
     assert out.shape == src.shape
 
 
-@pytest.mark.optional_torch
-def test_destripe_requires_torch_optional_dependency() -> None:
+@pytest.mark.requires_torch
+def test_destripe_requires_torch_dependency() -> None:
     pytest.importorskip("torch")
 
     src = np.zeros((8, 8), dtype=np.uint8)
@@ -74,10 +74,12 @@ def test_destripe_requires_torch_optional_dependency() -> None:
     assert out.dtype == np.uint8
 
 
-@pytest.mark.optional_torch
+@pytest.mark.requires_torch
 def test_destripe_wraps_runtime_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    import importlib
+
     torch = pytest.importorskip("torch")
-    import sdimg.image.remove_stripe as remove_stripe_module
+    denoise_module = importlib.import_module("sdimg.image.denoise")
 
     class _FailingRemover:
         def __init__(self, *args: object, **kwargs: object) -> None:
@@ -90,7 +92,7 @@ def test_destripe_wraps_runtime_errors(monkeypatch: pytest.MonkeyPatch) -> None:
             raise RuntimeError("torch boom")
 
     monkeypatch.setattr(
-        remove_stripe_module,
+        denoise_module,
         "UniversalStripeRemover",
         _FailingRemover,
     )

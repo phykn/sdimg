@@ -1,6 +1,7 @@
 import numpy as np
 
-from .helper import is_image, to_uint8
+from .._core.validate import ensure_image
+from .helper import to_uint8
 
 
 def adjust_brightness_contrast(
@@ -8,8 +9,7 @@ def adjust_brightness_contrast(
     brightness: float = 0.0,
     contrast: float = 0.0,
 ) -> np.ndarray:
-    if not is_image(image):
-        raise ValueError("image must have shape (H, W) or (H, W, C) with C in 1..4.")
+    image = ensure_image(image, name="image")
 
     brightness_val = np.clip(brightness, -1.0, 1.0)
     contrast_val = np.clip(contrast, -1.0, 1.0)
