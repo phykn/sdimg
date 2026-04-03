@@ -10,21 +10,13 @@ dependencies = [
     "numpy",
     "opencv-python-headless",
     "concave-hull",
-    "torch>=2.6",
 ]
 
-[tool.uv.sources]
-torch = { index = "pytorch-cu124" }
 
-[[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
-explicit = true
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["sdimg*"]
 
 [tool.pytest.ini_options]
-markers = [
-    "requires_torch: tests requiring torch dependency",
-]
+markers = []
