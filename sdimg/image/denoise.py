@@ -1,10 +1,7 @@
 import cv2
 import numpy as np
-import torch
 
 from .._core.validate import ensure_image
-from .helper import to_gray, to_rgb
-from .remove_stripe import UniversalStripeRemover
 
 
 def denoise(
@@ -31,52 +28,3 @@ def denoise(
         templateWindowSize=templateWindowSize,
         searchWindowSize=searchWindowSize,
     )
-
-
-def destripe(
-    image: np.ndarray,
-    mu1: float = 0.33,
-    mu2: float = 0.003,
-    iterations: int = 500,
-    n_tiles: int = 1,
-    verbose: bool = False,
-) -> np.ndarray:
-    image = ensure_image(image, name="image")
-
-    if iterations <= 0:
-        raise ValueError("iterations must be greater than 0.")
-    if n_tiles <= 0:
-        raise ValueError("n_tiles must be greater than 0.")
-
-    is_gray = image.ndim == 2
-    gray = to_gray(image)
-    x = gray.astype(np.float32) / 255.0
-    x_torch = torch.from_numpy(x).unsqueeze(0)
-
-    remover = UniversalStripeRemover(mu1=mu1, mu2=mu2)
-
-    try:
-        if n_tiles > 1:
-            res = remover.process_tiled(
-                x_torch,
-                n=n_tiles,
-                iterations=iterations,
-                verbose=verbose,
-            )
-        else:
-            res = remover.process(
-                x_torch,
-                iterations=iterations,
-                verbose=verbose,
-            )
-    except Exception as exc:
-        raise RuntimeError(f"destripe failed: {exc}") from exc
-
-    res_np = res.numpy()
-    if res_np.ndim == 3 and res_np.shape[0] == 1:
-        res_np = res_np.squeeze(0)
-    res_np = (res_np * 255.0).clip(0, 255).astype(np.uint8)
-
-    if is_gray:
-        return res_np
-    return to_rgb(res_np)

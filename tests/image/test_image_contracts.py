@@ -14,8 +14,7 @@ from sdimg.image import (
     to_uint8,
     zscore_norm,
 )
-from sdimg.image.denoise import denoise, destripe
-from sdimg.image.remove_stripe import UniversalStripeRemover
+from sdimg.image.denoise import denoise
 
 
 def test_to_uint8_clips_and_rounds() -> None:
@@ -64,65 +63,7 @@ def test_minmax_norm_returns_uint8() -> None:
     assert out.shape == src.shape
 
 
-@pytest.mark.requires_torch
-def test_destripe_requires_torch_dependency() -> None:
-    pytest.importorskip("torch")
 
-    src = np.zeros((8, 8), dtype=np.uint8)
-    out = destripe(src, iterations=1, n_tiles=1, verbose=False)
-
-    assert out.shape == src.shape
-    assert out.dtype == np.uint8
-
-
-@pytest.mark.requires_torch
-def test_destripe_wraps_runtime_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    import importlib
-
-    torch = pytest.importorskip("torch")
-    denoise_module = importlib.import_module("sdimg.image.denoise")
-
-    class _FailingRemover:
-        def __init__(self, *args: object, **kwargs: object) -> None:
-            pass
-
-        def process(self, *args: object, **kwargs: object) -> torch.Tensor:
-            raise RuntimeError("torch boom")
-
-        def process_tiled(self, *args: object, **kwargs: object) -> torch.Tensor:
-            raise RuntimeError("torch boom")
-
-    monkeypatch.setattr(
-        denoise_module,
-        "UniversalStripeRemover",
-        _FailingRemover,
-    )
-
-    src = np.zeros((8, 8), dtype=np.uint8)
-    with pytest.raises(RuntimeError, match="destripe failed"):
-        destripe(src, iterations=1, n_tiles=1, verbose=False)
-
-
-@pytest.mark.requires_torch
-def test_process_tiled_rejects_batched_input_with_n_not_one() -> None:
-    torch = pytest.importorskip("torch")
-    src = torch.zeros((2, 8, 8), dtype=torch.float32)
-    remover = UniversalStripeRemover()
-
-    with pytest.raises(ValueError, match=r"\(H, W\) or \(1, H, W\)"):
-        remover.process_tiled(src, n=2, iterations=1, verbose=False)
-
-
-def test_destripe_rejects_non_positive_iterations() -> None:
-    src = np.zeros((8, 8), dtype=np.uint8)
-    with pytest.raises(ValueError, match="iterations must be greater than 0"):
-        destripe(src, iterations=0)
-
-
-def test_destripe_rejects_non_positive_n_tiles() -> None:
-    src = np.zeros((8, 8), dtype=np.uint8)
-    with pytest.raises(ValueError, match="n_tiles must be greater than 0"):
-        destripe(src, n_tiles=0)
 
 
 def test_denoise_rejects_invalid_image_shape() -> None:
@@ -131,10 +72,7 @@ def test_denoise_rejects_invalid_image_shape() -> None:
         denoise(src)
 
 
-def test_destripe_rejects_invalid_image_shape() -> None:
-    src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="image must have shape"):
-        destripe(src, iterations=1)
+
 
 
 def test_hist_norm_rejects_invalid_image_shape() -> None:
