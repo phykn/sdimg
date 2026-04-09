@@ -5,14 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sdimg"
 version = "0.2.0"
+description = "Small, function-based image and mask processing library built on numpy"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
+authors = [
+    { name = "kn" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
 dependencies = [
     "numpy",
     "opencv-python-headless",
     "concave-hull",
 ]
 
-
+[project.urls]
+Homepage = "https://github.com/kn/sdimg"
+Repository = "https://github.com/kn/sdimg"
 
 [tool.setuptools.packages.find]
 where = ["src"]

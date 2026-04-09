@@ -96,3 +96,46 @@ def test_grabcut_wraps_cv2_errors(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(RuntimeError, match="grabcut failed"):
         grabcut(image=image, roi=roi, box=box)
+
+
+# --- otsu_threshold happy path ---
+
+
+def test_otsu_threshold_binarizes_bimodal_image() -> None:
+    src = np.zeros((10, 10), dtype=np.uint8)
+    src[:5, :] = 200
+    out = otsu_threshold(src, scale=1.0)
+    assert out.dtype == np.uint8
+    assert set(np.unique(out).tolist()) <= {0, 1}
+    assert np.all(out[:5, :] == 1)
+    assert np.all(out[5:, :] == 0)
+
+
+def test_otsu_threshold_scale_zero_makes_nonzero_foreground() -> None:
+    src = np.array([[0, 1, 100], [0, 50, 255]], dtype=np.uint8)
+    out = otsu_threshold(src, scale=0.0)
+    assert out[0, 0] == 0
+    assert out[0, 1] == 1
+    assert out[1, 2] == 1
+
+
+def test_otsu_threshold_uniform_image() -> None:
+    src = np.full((5, 5), 128, dtype=np.uint8)
+    out = otsu_threshold(src)
+    assert out.dtype == np.uint8
+    assert set(np.unique(out).tolist()) <= {0, 1}
+
+
+# --- grabcut happy path ---
+
+
+def test_grabcut_returns_binary_mask_with_correct_shape() -> None:
+    image = np.random.randint(0, 255, (20, 20, 3), dtype=np.uint8)
+    roi = np.zeros((10, 10), dtype=np.uint8)
+    roi[3:7, 3:7] = 1
+    box = (5, 5, 15, 15)
+
+    out = grabcut(image=image, roi=roi, box=box, iter_count=1)
+    assert out.dtype == np.uint8
+    assert out.shape == (10, 10)
+    assert set(np.unique(out).tolist()) <= {0, 1}

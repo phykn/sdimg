@@ -138,11 +138,151 @@ def test_merge_rejects_non_int_box_values() -> None:
         merge(patches, bad_meta)
 
 
+def test_crop_returns_independent_copy() -> None:
+    src = np.arange(25, dtype=np.uint8).reshape(5, 5)
+    cropped = crop(src, bbox=(1, 1, 3, 3))
+    cropped[0, 0] = 255
+
+    assert src[1, 1] != 255
+
+
 def test_split_returns_only_patches_when_return_meta_is_false() -> None:
     src = np.arange(8 * 10, dtype=np.uint8).reshape(8, 10)
     patches = split(src, n=2, overlap=0.25, return_meta=False)
-    
+
     # Should be a list of ndarrays, not a tuple
     assert isinstance(patches, list)
     assert all(isinstance(p, np.ndarray) for p in patches)
     assert len(patches) > 0
+
+
+# --- resize_keep_ratio ---
+
+
+def test_resize_keep_ratio_preserves_aspect_ratio() -> None:
+    src = np.zeros((10, 20, 3), dtype=np.uint8)
+    out = resize_keep_ratio(src, long_side=40)
+    assert out.shape == (20, 40, 3)
+
+
+def test_resize_keep_ratio_scales_down() -> None:
+    src = np.zeros((100, 200), dtype=np.uint8)
+    out = resize_keep_ratio(src, long_side=100)
+    assert out.shape == (50, 100)
+
+
+def test_resize_keep_ratio_rejects_non_positive_long_side() -> None:
+    src = np.zeros((10, 10), dtype=np.uint8)
+    with pytest.raises(ValueError, match="long_side must be greater than 0"):
+        resize_keep_ratio(src, long_side=0)
+
+
+# --- crop happy path ---
+
+
+def test_crop_returns_correct_content() -> None:
+    src = np.arange(25, dtype=np.uint8).reshape(5, 5)
+    out = crop(src, bbox=(1, 2, 4, 4))
+    assert out.shape == (2, 3)
+    assert out[0, 0] == src[2, 1]
+    assert out[1, 2] == src[3, 3]
+
+
+# --- resize happy path ---
+
+
+def test_resize_with_both_height_and_width() -> None:
+    src = np.zeros((10, 20), dtype=np.uint8)
+    out = resize(src, height=5, width=10)
+    assert out.shape == (5, 10)
+
+
+def test_resize_with_only_height_preserves_aspect_ratio() -> None:
+    src = np.zeros((10, 20, 3), dtype=np.uint8)
+    out = resize(src, height=20)
+    assert out.shape[:2] == (20, 40)
+
+
+# --- rotate happy path ---
+
+
+def test_rotate_0_returns_same() -> None:
+    src = np.arange(6, dtype=np.uint8).reshape(2, 3)
+    out = rotate(src, rotation=0)
+    assert np.array_equal(out, src)
+
+
+def test_rotate_180_reverses_content() -> None:
+    src = np.arange(4, dtype=np.uint8).reshape(2, 2)
+    out = rotate(src, rotation=180)
+    assert out[0, 0] == src[1, 1]
+    assert out[1, 1] == src[0, 0]
+
+
+def test_rotate_270_shape() -> None:
+    src = np.arange(6, dtype=np.uint8).reshape(2, 3)
+    out = rotate(src, rotation=270)
+    assert out.shape == (3, 2)
+
+
+# --- flip happy path ---
+
+
+def test_flip_vertical_reverses_rows() -> None:
+    src = np.array([[1, 2], [3, 4]], dtype=np.uint8)
+    out = flip(src, direction="vertical")
+    assert out[0, 0] == 3
+    assert out[1, 0] == 1
+
+
+def test_flip_transpose_swaps_axes() -> None:
+    src = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.uint8)
+    out = flip(src, direction="transpose")
+    assert out.shape == (3, 2)
+    assert out[0, 1] == 4
+    assert out[2, 0] == 3
+
+
+def test_flip_rejects_invalid_direction() -> None:
+    src = np.zeros((2, 2), dtype=np.uint8)
+    with pytest.raises(ValueError, match="direction must be one of"):
+        flip(src, direction="diagonal")
+
+
+# --- pad_to_square happy path ---
+
+
+def test_pad_to_square_already_square() -> None:
+    src = np.ones((5, 5), dtype=np.uint8)
+    out = pad_to_square(src)
+    assert out.shape == (5, 5)
+    assert np.array_equal(out, src)
+
+
+def test_pad_to_square_tall_image() -> None:
+    src = np.ones((5, 3), dtype=np.uint8)
+    out = pad_to_square(src)
+    assert out.shape == (5, 5)
+
+
+# --- split validation ---
+
+
+def test_split_rejects_invalid_n() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="n must be greater than 0"):
+        split(src, n=0)
+
+
+def test_split_rejects_invalid_overlap() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="overlap must satisfy"):
+        split(src, n=2, overlap=1.0)
+
+
+# --- merge validation ---
+
+
+def test_merge_rejects_empty_patches() -> None:
+    with pytest.raises(ValueError, match="patches must not be empty"):
+        merge([], {"shape": (8, 8), "boxes": []})

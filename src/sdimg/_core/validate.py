@@ -23,9 +23,7 @@ def ensure_image(image: object, name: str = "image") -> np.ndarray:
         return arr
     channels = arr.shape[2]
     if channels not in {1, 2, 3, 4}:
-        raise value_error(
-            f"{name} must have shape (H, W) or (H, W, C) with C in 1..4."
-        )
+        raise value_error(f"{name} must have shape (H, W) or (H, W, C) with C in 1..4.")
     return arr
 
 

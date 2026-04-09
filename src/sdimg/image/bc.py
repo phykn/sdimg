@@ -15,7 +15,7 @@ def adjust_brightness_contrast(
     contrast_val = np.clip(contrast, -1.0, 1.0)
 
     adjusted = image.astype(np.float32)
-    
+
     if brightness_val != 0.0:
         adjusted += brightness_val * 255.0
 

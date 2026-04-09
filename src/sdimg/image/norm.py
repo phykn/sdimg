@@ -11,6 +11,7 @@ def clahe_norm(
     tileGridSize: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
     image = ensure_image(image, name="image")
+    image = to_uint8(image)
 
     clahe = cv2.createCLAHE(
         clipLimit=clipLimit,
@@ -26,6 +27,7 @@ def clahe_norm(
 
 def hist_norm(image: np.ndarray) -> np.ndarray:
     image = ensure_image(image, name="image")
+    image = to_uint8(image)
 
     if image.ndim == 2:
         return cv2.equalizeHist(image)
@@ -53,9 +55,9 @@ def zscore_norm(
     work -= mean
     work /= safe_std
     np.clip(work, -std_range, std_range, out=work)
-    
+
     work += std_range
-    work *= (255.0 / (2.0 * std_range))
+    work *= 255.0 / (2.0 * std_range)
     scaled = np.where(std == 0.0, 127.5, work)
 
     result = to_uint8(scaled)

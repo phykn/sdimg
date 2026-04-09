@@ -1,6 +1,6 @@
 import numpy as np
 
-from .._core.validate import ensure_image
+from .._core.validate import ensure_image, ensure_ndarray
 
 
 def is_image(image: object) -> bool:
@@ -12,20 +12,13 @@ def is_image(image: object) -> bool:
 
 
 def to_rgb(image: np.ndarray) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Image input must be a numpy.ndarray.")
+    image = ensure_image(image, name="image")
 
     if image.ndim == 2:
         rgb = np.repeat(image[..., None], 3, axis=2)
         return to_uint8(rgb)
 
-    if image.ndim != 3:
-        raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
     channels = image.shape[2]
-    if channels < 1 or channels > 4:
-        raise ValueError("Image channel count must be one of 1, 2, 3, 4.")
-
     if channels <= 2:
         rgb = np.repeat(image[..., 0:1], 3, axis=2)
     elif channels == 3:
@@ -36,36 +29,24 @@ def to_rgb(image: np.ndarray) -> np.ndarray:
 
 
 def to_gray(image: np.ndarray) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Image input must be a numpy.ndarray.")
+    image = ensure_image(image, name="image")
 
     if image.ndim == 2:
-        gray = image
+        return to_uint8(image)
+
+    channels = image.shape[2]
+    if channels <= 2:
+        gray = image[..., 0]
     else:
-        if image.ndim != 3:
-            raise ValueError("Image input must have shape (H, W) or (H, W, C).")
-
-        channels = image.shape[2]
-        if channels < 1 or channels > 4:
-            raise ValueError("Image channel count must be one of 1, 2, 3, 4.")
-
-        if channels <= 2:
-            gray = image[..., 0]
-        elif channels == 3:
-            gray = image[..., 0] * np.float32(0.299)
-            gray += image[..., 1] * np.float32(0.587)
-            gray += image[..., 2] * np.float32(0.114)
-        else:
-            gray = image[..., 0] * np.float32(0.299)
-            gray += image[..., 1] * np.float32(0.587)
-            gray += image[..., 2] * np.float32(0.114)
+        gray = image[..., 0] * np.float32(0.299)
+        gray += image[..., 1] * np.float32(0.587)
+        gray += image[..., 2] * np.float32(0.114)
 
     return to_uint8(gray)
 
 
 def to_uint8(image: np.ndarray) -> np.ndarray:
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Image input must be a numpy.ndarray.")
+    image = ensure_ndarray(image, name="image")
 
     if image.dtype == np.uint8:
         return image

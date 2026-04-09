@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from .._core.validate import ensure_image
+from .helper import to_gray
 
 
 def denoise(
@@ -21,6 +22,9 @@ def denoise(
             templateWindowSize=templateWindowSize,
             searchWindowSize=searchWindowSize,
         )
+
+    if image.ndim == 3:
+        image = to_gray(image)
 
     return cv2.fastNlMeansDenoising(
         image,

@@ -5,7 +5,7 @@ Small, function-based image and mask processing library built on `numpy.ndarray`
 ## Install
 
 ```bash
-pip install .
+pip install sdimg
 ```
 
 ## Modules
