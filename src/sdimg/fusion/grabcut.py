@@ -5,6 +5,7 @@ from .._core.validate import ensure_image
 from ..image.helper import to_gray
 from ..spatial.crop import crop
 from ..mask.helper import get_roi_size, to_mask
+from ..mask.distance import distance_transform
 
 
 def _get_k(shape: tuple[int, int]) -> int:
@@ -50,8 +51,8 @@ def _build_img(image: np.ndarray, roi: np.ndarray) -> np.ndarray:
 
 
 def _build_mask(roi: np.ndarray) -> np.ndarray:
-    din = cv2.distanceTransform(roi, cv2.DIST_L2, 3, dstType=cv2.CV_32F)
-    dout = cv2.distanceTransform(1 - roi, cv2.DIST_L2, 3, dstType=cv2.CV_32F)
+    din = distance_transform(roi)
+    dout = distance_transform((1 - roi).astype(np.uint8))
 
     max_in = float(din.max())
     max_out = float(dout.max())
