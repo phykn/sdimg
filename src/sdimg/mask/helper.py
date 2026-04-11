@@ -18,12 +18,18 @@ def to_mask(mask: object) -> np.ndarray:
     if mask.dtype == np.bool_:
         return mask.astype(np.uint8)
 
-    unique_values = set(np.unique(mask).tolist())
-    if unique_values <= {0, 1}:
+    if mask.size == 0:
         return mask.astype(np.uint8)
 
-    if unique_values <= {0, 255}:
-        return (mask > 0).astype(np.uint8)
+    mx = mask.max()
+    mn = mask.min()
+
+    if mn >= 0 and mx <= 1:
+        return mask.astype(np.uint8)
+
+    if mx == 255 and mn >= 0:
+        if bool(((mask == 0) | (mask == 255)).all()):
+            return (mask > 0).astype(np.uint8)
 
     raise ValueError(
         "Mask input must contain only binary values represented as "
