@@ -25,7 +25,7 @@ Source lives in `src/sdimg/` with four public modules and one internal module:
 
 - **`_core/`** — shared validators (`ensure_src`, `ensure_image`, `ensure_mask`, `ensure_bbox`), type aliases (`BBox`), and error factory helpers. Used by all other modules.
 - **`image/`** — normalization, blur, denoise, sharpen, color/dtype conversion (`to_gray`, `to_rgb`, `to_uint8`, `is_image`).
-- **`mask/`** — binary mask operations: morphology, hull, edge, distance, connected components, hole filling, padding, and bbox/ROI helpers (`to_roi_box`, `get_box_from_mask`, `get_centroid`, `is_mask`, `to_mask`).
+- **`mask/`** — binary mask operations: morphology, hull, edge, distance, connected components, hole filling, and bbox/ROI helpers (`to_roi_box`, `get_box_from_mask`, `get_centroid`, `is_mask`, `to_mask`).
 - **`spatial/`** — resize, crop, rotate/flip, pad, split/merge patches with overlap.
 - **`fusion/`** — algorithms combining image+mask: `grabcut`, `otsu_threshold`.
 

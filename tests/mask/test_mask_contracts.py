@@ -456,3 +456,15 @@ def test_to_mask_rejects_float_dtype_with_binary_values() -> None:
     out = to_mask(src)
     assert out.dtype == np.uint8
     assert out.tolist() == [[0, 1], [1, 0]]
+
+
+def test_to_mask_rejects_float_with_non_binary_values() -> None:
+    src = np.array([[0.5]], dtype=np.float32)
+    with pytest.raises(ValueError, match="binary values"):
+        to_mask(src)
+
+
+def test_to_mask_rejects_float_probability_map() -> None:
+    src = np.array([[0.2, 0.8], [0.3, 0.9]], dtype=np.float32)
+    with pytest.raises(ValueError, match="binary values"):
+        to_mask(src)

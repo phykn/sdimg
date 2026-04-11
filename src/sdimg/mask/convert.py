@@ -25,6 +25,12 @@ def to_mask(mask: object) -> np.ndarray:
     mn = mask.min()
 
     if mn >= 0 and mx <= 1:
+        if np.issubdtype(mask.dtype, np.floating):
+            if not bool(((mask == 0) | (mask == 1)).all()):
+                raise ValueError(
+                    "Mask input must contain only binary values represented as "
+                    "bool, {0, 1}, or {0, 255}.",
+                )
         return mask.astype(np.uint8)
 
     if mx == 255 and mn >= 0:
