@@ -41,15 +41,6 @@ pip install sdimg
 - `ValueError`: invalid shape, invalid params, invalid mask values, invalid bbox
 - `RuntimeError`: wrapped lower-level failures (`cv2`, internal processing)
 
-## Internal Structure
-
-- `sdimg/_core/validate.py`: shared validators (`ensure_src`, `ensure_image`, `ensure_mask`, `ensure_bbox`, `ensure_ndarray`)
-- `sdimg/_core/types.py`: shared type aliases (`BBox`)
-- `sdimg/_core/errors.py`: shared error helpers
-- `sdimg/image/convert.py`: channel/dtype conversion (`to_gray`, `to_rgb`, `to_uint8`, `is_image`)
-- `sdimg/mask/convert.py`: mask validation and normalization (`to_mask`, `is_mask`)
-- `sdimg/mask/bbox.py`: coordinate and bbox helpers (`get_coords`, `get_box_from_mask`, `to_roi_box`, `get_centroid`, …)
-
 ## Quick Example
 
 ```python
