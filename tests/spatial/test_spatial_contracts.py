@@ -64,6 +64,33 @@ def test_split_merge_roundtrip_shape_dtype() -> None:
     assert merged.dtype == np.uint8
 
 
+def test_split_high_overlap_covers_full_extent() -> None:
+    src = np.arange(100 * 100, dtype=np.uint8).reshape(100, 100)
+    patches, meta = split(src, n=4, overlap=0.5, return_meta=True)
+
+    assert len(patches) == 16
+    boxes = meta["boxes"]
+    # first box anchored at 0, last box ends exactly at length on both axes
+    assert boxes[0][0] == 0 and boxes[0][1] == 0
+    assert boxes[-1][2] == 100 and boxes[-1][3] == 100
+
+    # adjacent patch overlap satisfies the requested ratio along the width axis
+    for i in range(3):
+        a, b = boxes[i], boxes[i + 1]
+        patch_w = a[2] - a[0]
+        step = b[0] - a[0]
+        assert 1.0 - step / patch_w + 1e-9 >= 0.5
+
+
+def test_split_non_divisible_length_with_overlap() -> None:
+    src = np.arange(17 * 23, dtype=np.uint8).reshape(17, 23)
+    patches, meta = split(src, n=3, overlap=0.3, return_meta=True)
+    merged = merge(patches, meta)
+
+    assert merged.shape == src.shape
+    assert len(patches) == 9
+
+
 def test_split_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
     with pytest.raises(ValueError, match="src must have shape"):

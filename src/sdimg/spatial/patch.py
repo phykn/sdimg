@@ -80,16 +80,13 @@ def _resolve_patch_axis(
     if n == 1:
         return [0], length
 
-    minimum_size = math.ceil(length / n)
+    # closed-form lower bound: step = (length - P) / (n - 1), overlap = 1 - step/P
+    denominator = 1.0 + (n - 1) * (1.0 - overlap)
+    patch_size = max(1, math.ceil(length / denominator))
 
-    for patch_size in range(minimum_size, length + 1):
+    while patch_size <= length:
         span = length - patch_size
         starts = np.rint(np.linspace(0, span, num=n)).astype(np.int64).tolist()
-
-        if starts[0] != 0:
-            continue
-        if starts[-1] + patch_size != length:
-            continue
 
         valid = True
         for left, right in zip(starts, starts[1:]):
@@ -97,12 +94,12 @@ def _resolve_patch_axis(
             if step <= 0:
                 valid = False
                 break
-            actual_overlap = 1.0 - (step / patch_size)
-            if actual_overlap + 1e-9 < overlap:
+            if 1.0 - (step / patch_size) + 1e-9 < overlap:
                 valid = False
                 break
         if valid:
             return starts, patch_size
+        patch_size += 1
 
     raise ValueError("Unable to resolve patches for the given n and overlap.")
 
