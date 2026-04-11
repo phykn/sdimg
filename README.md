@@ -70,9 +70,3 @@ roi_box = to_roi_box(mask)
 if roi_box is not None:
     refined = grabcut(image=image, roi=roi_box["roi"], box=roi_box["box"])
 ```
-
-## Local Test
-
-```bash
-PYTHONPATH=src pytest -q
-```
