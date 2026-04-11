@@ -6,6 +6,8 @@ from .convert import to_mask
 
 MorphologyOp = Literal["open", "close", "erode", "dilate"]
 
+ALLOWED_OPS: tuple[MorphologyOp, ...] = ("open", "close", "erode", "dilate")
+
 
 def morphology(
     mask: np.ndarray,
@@ -15,14 +17,10 @@ def morphology(
 ) -> np.ndarray:
     mask = to_mask(mask)
 
-    ops = {
-        "open": cv2.MORPH_OPEN,
-        "close": cv2.MORPH_CLOSE,
-        "erode": "erode",
-        "dilate": "dilate",
-    }
-    if op not in ops:
-        raise ValueError(f"op must be one of: {', '.join(repr(k) for k in ops)}.")
+    if op not in ALLOWED_OPS:
+        raise ValueError(
+            f"op must be one of: {', '.join(repr(k) for k in ALLOWED_OPS)}."
+        )
 
     if np.count_nonzero(mask) == 0:
         return mask
@@ -34,13 +32,10 @@ def morphology(
         result = cv2.erode(padded, kernel, iterations=iterations)
     elif op == "dilate":
         result = cv2.dilate(padded, kernel, iterations=iterations)
+    elif op == "open":
+        result = cv2.morphologyEx(padded, cv2.MORPH_OPEN, kernel, iterations=iterations)
     else:
-        result = cv2.morphologyEx(
-            padded,
-            ops[op],
-            kernel,
-            iterations=iterations,
-        )
+        result = cv2.morphologyEx(padded, cv2.MORPH_CLOSE, kernel, iterations=iterations)
 
     result = result[1:-1, 1:-1]
     return (result > 0).astype(np.uint8)
