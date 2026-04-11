@@ -7,7 +7,7 @@ from .convert import to_uint8
 
 def clahe_norm(
     image: np.ndarray,
-    clipLimit: float = 40.0,
+    clipLimit: float = 2.0,
     tileGridSize: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
     image = ensure_image(image, name="image")
