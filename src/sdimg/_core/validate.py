@@ -18,6 +18,16 @@ def ensure_src(src: object, name: str = "src") -> np.ndarray:
 
 
 def ensure_image(image: object, name: str = "image") -> np.ndarray:
+    """Validate an image array.
+
+    Accepts shape (H, W) or (H, W, C) with C in {1, 2, 3, 4}.
+
+    Channel-count semantics (not runtime-enforced, documented contract):
+        C == 1: grayscale
+        C == 2: grayscale + alpha (alpha ignored by to_gray/to_rgb)
+        C == 3: RGB — sdimg assumes RGB channel order, not BGR
+        C == 4: RGBA (alpha ignored by to_gray/to_rgb)
+    """
     arr = ensure_src(image, name=name)
     if arr.ndim == 2:
         return arr
