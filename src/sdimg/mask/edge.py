@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 from .helper import to_mask
-from .pad import _pad_1px, _unpad_1px
 
 
 def extract_edge(
@@ -15,7 +14,7 @@ def extract_edge(
         return mask
 
     kernel = np.ones(ksize, dtype=np.uint8)
-    padded = _pad_1px(mask)
+    padded = np.pad(mask, 1, mode="constant", constant_values=0)
     edge = padded - cv2.erode(padded, kernel)
-    edge = _unpad_1px(edge)
+    edge = edge[1:-1, 1:-1]
     return (edge > 0).astype(np.uint8)

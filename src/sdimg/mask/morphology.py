@@ -3,7 +3,6 @@ import numpy as np
 from typing import Literal
 
 from .helper import to_mask
-from .pad import _pad_1px, _unpad_1px
 
 MorphologyOp = Literal["open", "close", "erode", "dilate"]
 
@@ -29,7 +28,7 @@ def morphology(
         return mask
 
     kernel = np.ones(ksize, dtype=np.uint8)
-    padded = _pad_1px(mask)
+    padded = np.pad(mask, 1, mode="constant", constant_values=0)
 
     if op == "erode":
         result = cv2.erode(padded, kernel, iterations=iterations)
@@ -43,5 +42,5 @@ def morphology(
             iterations=iterations,
         )
 
-    result = _unpad_1px(result)
+    result = result[1:-1, 1:-1]
     return (result > 0).astype(np.uint8)

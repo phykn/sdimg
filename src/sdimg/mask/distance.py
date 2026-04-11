@@ -3,7 +3,6 @@ import numpy as np
 from typing import Literal
 
 from .helper import to_mask
-from .pad import _pad_1px, _unpad_1px
 
 DistanceType = Literal["l1", "l2", "c"]
 
@@ -27,12 +26,11 @@ def distance_transform(
     else:
         raise ValueError("distance_type must be one of: 'l1', 'l2', 'c'.")
 
-    padded = _pad_1px(mask)
+    padded = np.pad(mask, 1, mode="constant", constant_values=0)
     distance = cv2.distanceTransform(
         padded,
         cv2_distance_type,
         mask_size,
         dstType=cv2.CV_32F,
     )
-    distance = _unpad_1px(distance)
-    return distance
+    return distance[1:-1, 1:-1]
