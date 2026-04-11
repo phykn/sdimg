@@ -26,8 +26,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kn/sdimg"
-Repository = "https://github.com/kn/sdimg"
+Homepage = "https://github.com/phykn/sdimg"
+Repository = "https://github.com/phykn/sdimg"
 
 [tool.setuptools.packages.find]
 where = ["src"]

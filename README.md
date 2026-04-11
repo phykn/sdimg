@@ -10,10 +10,10 @@ pip install sdimg
 
 ## Modules
 
-- `sdimg.image`: normalize, blur, denoise, sharpen, color helpers
-- `sdimg.mask`: binary mask cleanup, hull/edge/distance, bbox/ROI helpers
-- `sdimg.spatial`: resize, crop, rotate/flip, pad, split/merge patches
-- `sdimg.fusion`: `otsu_threshold` (OpenCV Otsu), `grabcut`
+- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `is_image`
+- `sdimg.mask`: `morphology`, `convex_hull`, `concave_hull`, `extract_edge`, `distance_transform`, `pick_largest`, `fill_holes`, `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size`, `to_roi_box`, `to_mask`, `is_mask`
+- `sdimg.spatial`: `resize`, `resize_keep_ratio`, `crop`, `pad_to_square`, `rotate`, `flip`, `split`, `merge`
+- `sdimg.fusion`: `otsu_threshold`, `grabcut`
 
 ## Core Contracts
 
@@ -43,9 +43,12 @@ pip install sdimg
 
 ## Internal Structure
 
-- `sdimg/_core/validate.py`: shared validators (`ensure_src`, `ensure_image`, `ensure_mask`, `ensure_bbox`)
-- `sdimg/_core/types.py`: shared type aliases
+- `sdimg/_core/validate.py`: shared validators (`ensure_src`, `ensure_image`, `ensure_mask`, `ensure_bbox`, `ensure_ndarray`)
+- `sdimg/_core/types.py`: shared type aliases (`BBox`)
 - `sdimg/_core/errors.py`: shared error helpers
+- `sdimg/image/convert.py`: channel/dtype conversion (`to_gray`, `to_rgb`, `to_uint8`, `is_image`)
+- `sdimg/mask/convert.py`: mask validation and normalization (`to_mask`, `is_mask`)
+- `sdimg/mask/bbox.py`: coordinate and bbox helpers (`get_coords`, `get_box_from_mask`, `to_roi_box`, `get_centroid`, …)
 
 ## Quick Example
 
@@ -71,5 +74,5 @@ if roi_box is not None:
 ## Local Test
 
 ```bash
-PYTHONPATH=. pytest -q
+PYTHONPATH=src pytest -q
 ```
