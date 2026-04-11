@@ -1,7 +1,7 @@
 import numpy as np
 
 from .._core.validate import ensure_image
-from .helper import to_uint8
+from .convert import to_uint8
 
 
 def adjust_brightness_contrast(

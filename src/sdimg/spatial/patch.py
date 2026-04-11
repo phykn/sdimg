@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from .._core.validate import ensure_src
-from ..image.helper import to_uint8
+from ..image.convert import to_uint8
 
 
 def split(

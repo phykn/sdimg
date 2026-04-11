@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from .._core.validate import ensure_image
-from .helper import to_gray
+from .convert import to_gray
 
 
 def denoise(

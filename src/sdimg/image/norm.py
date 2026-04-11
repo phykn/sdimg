@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from .._core.validate import ensure_image
-from .helper import to_uint8
+from .convert import to_uint8
 
 
 def clahe_norm(

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from .._core.validate import ensure_image
-from ..image.helper import to_gray
+from ..image.convert import to_gray
 
 
 def otsu_threshold(
