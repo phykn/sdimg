@@ -4,7 +4,8 @@ import numpy as np
 from .._core.validate import ensure_image
 from ..image.helper import to_gray
 from ..spatial.crop import crop
-from ..mask.helper import get_roi_size, to_mask
+from ..mask.bbox import get_roi_size
+from ..mask.convert import to_mask
 from ..mask.distance import distance_transform
 
 

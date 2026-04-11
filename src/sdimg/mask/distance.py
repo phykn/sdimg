@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from typing import Literal
 
-from .helper import to_mask
+from .convert import to_mask
 
 DistanceType = Literal["l1", "l2", "c"]
 

@@ -4,7 +4,7 @@ from concave_hull import concave_hull as build_concave_hull
 
 from .component import pick_largest
 from .edge import extract_edge
-from .helper import to_mask
+from .convert import to_mask
 
 
 def concave_hull(
