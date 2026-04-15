@@ -12,6 +12,7 @@ dist/
 
 .venv/
 venv/
+uv.lock
 
 .claude/
 CLAUDE.md
