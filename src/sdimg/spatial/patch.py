@@ -8,19 +8,38 @@ from ..image.convert import to_uint8
 
 def split(
     src: np.ndarray,
-    n: int,
-    overlap: float = 0.0,
+    n: int | tuple[int, int],
+    overlap: float | tuple[float, float] = 0.0,
     return_meta: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, object]]:
     data = ensure_src(src, name="src")
 
-    if n <= 0:
+    if isinstance(n, int):
+        nw, nh = n, n
+    elif isinstance(n, tuple) and len(n) == 2 and all(isinstance(v, int) for v in n):
+        nw, nh = n
+    else:
+        raise TypeError("n must be an int or a tuple of two ints.")
+
+    if nw <= 0 or nh <= 0:
         raise ValueError("n must be greater than 0.")
-    if not (0.0 <= overlap < 1.0):
+
+    if isinstance(overlap, (int, float)):
+        overlap_w, overlap_h = float(overlap), float(overlap)
+    elif (
+        isinstance(overlap, tuple)
+        and len(overlap) == 2
+        and all(isinstance(v, (int, float)) for v in overlap)
+    ):
+        overlap_w, overlap_h = float(overlap[0]), float(overlap[1])
+    else:
+        raise TypeError("overlap must be a float or a tuple of two floats.")
+
+    if not (0.0 <= overlap_w < 1.0) or not (0.0 <= overlap_h < 1.0):
         raise ValueError("overlap must satisfy 0 <= overlap < 1.")
 
-    starts_h, patch_h = _resolve_patch_axis(data.shape[0], n, overlap)
-    starts_w, patch_w = _resolve_patch_axis(data.shape[1], n, overlap)
+    starts_h, patch_h = _resolve_patch_axis(data.shape[0], nh, overlap_h)
+    starts_w, patch_w = _resolve_patch_axis(data.shape[1], nw, overlap_w)
 
     patches: list[np.ndarray] = []
     boxes: list[tuple[int, int, int, int]] = []

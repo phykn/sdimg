@@ -307,6 +307,85 @@ def test_split_rejects_invalid_overlap() -> None:
         split(src, n=2, overlap=1.0)
 
 
+# --- asymmetric split ---
+
+
+def test_split_asymmetric_produces_correct_count() -> None:
+    src = np.zeros((10, 20), dtype=np.uint8)
+    patches, meta = split(src, n=(2, 1), return_meta=True)
+
+    # n=(nw=2, nh=1) → 1 row, 2 columns → 2 patches
+    assert len(patches) == 2
+    assert all(p.shape == (10, 10) for p in patches)
+
+
+def test_split_asymmetric_roundtrip() -> None:
+    src = np.arange(20 * 30, dtype=np.uint8).reshape(20, 30)
+    patches, meta = split(src, n=(3, 2), return_meta=True)
+
+    # n=(nw=3, nh=2) → 2 rows, 3 columns → 6 patches
+    assert len(patches) == 6
+    merged = merge(patches, meta)
+    assert merged.shape == src.shape
+    assert merged.dtype == np.uint8
+
+
+def test_split_asymmetric_with_overlap() -> None:
+    src = np.zeros((10, 100), dtype=np.uint8)
+    patches, meta = split(src, n=(4, 1), overlap=0.25, return_meta=True)
+
+    # n=(nw=4, nh=1) → 1 row, 4 columns → 4 patches
+    assert len(patches) == 4
+
+    # adjacent patches along width axis satisfy overlap
+    boxes = meta["boxes"]
+    for i in range(3):
+        a, b = boxes[i], boxes[i + 1]
+        patch_w = a[2] - a[0]
+        step = b[0] - a[0]
+        assert 1.0 - step / patch_w + 1e-9 >= 0.25
+
+
+def test_split_per_axis_overlap() -> None:
+    src = np.zeros((40, 60), dtype=np.uint8)
+    patches, meta = split(src, n=(3, 2), overlap=(0.5, 0.0), return_meta=True)
+
+    # n=(nw=3, nh=2), overlap=(overlap_w=0.5, overlap_h=0.0)
+    assert len(patches) == 6
+    merged = merge(patches, meta)
+    assert merged.shape == src.shape
+
+
+def test_split_tuple_n_rejects_zero_component() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="n must be greater than 0"):
+        split(src, n=(0, 2))
+
+
+def test_split_tuple_n_rejects_wrong_type() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(TypeError, match="n must be an int or a tuple of two ints"):
+        split(src, n=(1.5, 2))  # type: ignore[arg-type]
+
+
+def test_split_tuple_n_rejects_wrong_length() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(TypeError, match="n must be an int or a tuple of two ints"):
+        split(src, n=(1, 2, 3))  # type: ignore[arg-type]
+
+
+def test_split_tuple_overlap_rejects_out_of_range() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="overlap must satisfy"):
+        split(src, n=2, overlap=(0.5, 1.0))
+
+
+def test_split_tuple_overlap_rejects_wrong_type() -> None:
+    src = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(TypeError, match="overlap must be a float or a tuple of two floats"):
+        split(src, n=2, overlap="bad")  # type: ignore[arg-type]
+
+
 # --- merge validation ---
 
 
