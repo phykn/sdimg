@@ -1,5 +1,6 @@
 import numpy as np
 
+from .._core.types import BBox
 from .._core.validate import ensure_ndarray
 from .convert import to_mask
 
@@ -19,7 +20,7 @@ def get_coords(
 
 def get_box_from_coords(
     coords: np.ndarray,
-) -> tuple[int, int, int, int] | None:
+) -> BBox | None:
     coords = ensure_ndarray(coords, name="coords")
 
     if coords.size == 0:
@@ -46,7 +47,7 @@ def get_box_from_coords(
 
 def get_box_from_mask(
     mask: np.ndarray,
-) -> tuple[int, int, int, int] | None:
+) -> BBox | None:
     mask = to_mask(mask)
     return get_box_from_coords(get_coords(mask))
 
@@ -69,7 +70,7 @@ def get_roi_size(mask: np.ndarray) -> int:
     return int(np.count_nonzero(mask))
 
 
-def get_box_size(bbox: tuple[int, int, int, int] | None) -> int:
+def get_box_size(bbox: BBox | None) -> int:
     if bbox is None:
         return 0
 

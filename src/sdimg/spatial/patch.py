@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 
+from .._core.types import BBox
 from .._core.validate import ensure_src
 from ..image.convert import to_uint8
 
@@ -42,7 +43,7 @@ def split(
     starts_w, patch_w = _resolve_patch_axis(data.shape[1], nw, overlap_w)
 
     patches: list[np.ndarray] = []
-    boxes: list[tuple[int, int, int, int]] = []
+    boxes: list[BBox] = []
 
     for hmin in starts_h:
         hmax = hmin + patch_h
@@ -126,7 +127,7 @@ def _resolve_patch_axis(
 def _merge_patches(
     patches: list[np.ndarray],
     shape: tuple[int, ...],
-    boxes: list[tuple[int, int, int, int]],
+    boxes: list[BBox],
 ) -> np.ndarray:
     if len(shape) == 2:
         merged = np.zeros((shape[0], shape[1], 1), dtype=np.float32)

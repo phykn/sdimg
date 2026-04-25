@@ -1,12 +1,13 @@
 import numpy as np
 
+from .._core.types import BBox
 from .._core.validate import ensure_src
 
 
 def pad_to_square(
     src: np.ndarray,
     return_box: bool = False,
-) -> np.ndarray | tuple[np.ndarray, tuple[int, int, int, int]]:
+) -> np.ndarray | tuple[np.ndarray, BBox]:
     src = ensure_src(src, name="src")
 
     height, width = src.shape[:2]
