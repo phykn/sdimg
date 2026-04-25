@@ -11,15 +11,15 @@ def adjust_brightness_contrast(
 ) -> np.ndarray:
     image = ensure_image(image, name="image")
 
-    brightness_val = np.clip(brightness, -1.0, 1.0)
-    contrast_val = np.clip(contrast, -1.0, 1.0)
+    brightness = np.clip(brightness, -1.0, 1.0)
+    contrast = np.clip(contrast, -1.0, 1.0)
 
     adjusted = image.astype(np.float32)
 
-    if brightness_val != 0.0:
-        adjusted += brightness_val * 255.0
+    if brightness != 0.0:
+        adjusted += brightness * 255.0
 
-    factor = 1.0 + contrast_val
+    factor = 1.0 + contrast
     if factor != 1.0:
         adjusted -= 128.0
         adjusted *= factor
