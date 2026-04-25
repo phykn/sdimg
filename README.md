@@ -19,7 +19,7 @@ pip install sdimg
 
 - Input arrays must be `numpy.ndarray`
 - Images: shape `(H, W)` or `(H, W, C)` with `C in 1..4`
-- **Color channel order: RGB.** Color images passed to `sdimg` must be in RGB order. `cv2.imread` returns BGR — callers using OpenCV I/O must convert with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)` before calling `sdimg` functions.
+- **Color channel order: RGB.** `cv2.imread` returns BGR — convert with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)` first.
 - **Channel-count semantics:**
   - `C == 1`: grayscale
   - `C == 2`: grayscale + alpha (alpha is ignored by `to_gray`/`to_rgb`)
