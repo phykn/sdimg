@@ -1,4 +1,4 @@
-from .errors import type_error, value_error
+from .errors import type_error
 from .types import BBox
 from .validate import (
     ensure_bbox,
