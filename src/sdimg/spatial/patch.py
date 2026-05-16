@@ -154,26 +154,7 @@ def _merge_patches(
         if validated.ndim == 2:
             validated = validated[..., None]
 
-        patch_shape = validated.shape[:2]
-        patch_weights = weight_cache.get(patch_shape)
-        if patch_weights is None:
-            h, w = patch_shape
-            if h == 1:
-                weights_h = np.ones(1, dtype=np.float32)
-            else:
-                axis_h = np.linspace(0.0, np.pi, num=h, dtype=np.float32)
-                weights_h = np.maximum(0.5 - 0.5 * np.cos(axis_h), 1e-3)
-
-            if w == 1:
-                weights_w = np.ones(1, dtype=np.float32)
-            else:
-                axis_w = np.linspace(0.0, np.pi, num=w, dtype=np.float32)
-                weights_w = np.maximum(0.5 - 0.5 * np.cos(axis_w), 1e-3)
-
-            patch_weights = weights_h[:, None] * weights_w[None, :]
-            weight_cache[patch_shape] = patch_weights
-
-        patch_weights = patch_weights[..., None]
+        patch_weights = _patch_weights(validated.shape[:2], weight_cache)
         merged[hmin:hmax, wmin:wmax, :] += validated * patch_weights
         weights[hmin:hmax, wmin:wmax, :] += patch_weights
 
@@ -182,3 +163,23 @@ def _merge_patches(
     if len(shape) == 2:
         return merged[..., 0]
     return merged
+
+
+def _patch_weights(
+    patch_shape: tuple[int, int],
+    cache: dict[tuple[int, int], np.ndarray],
+) -> np.ndarray:
+    patch_weights = cache.get(patch_shape)
+    if patch_weights is None:
+        h, w = patch_shape
+        patch_weights = _axis_weights(h)[:, None] * _axis_weights(w)[None, :]
+        cache[patch_shape] = patch_weights
+    return patch_weights[..., None]
+
+
+def _axis_weights(length: int) -> np.ndarray:
+    if length == 1:
+        return np.ones(1, dtype=np.float32)
+
+    axis = np.linspace(0.0, np.pi, num=length, dtype=np.float32)
+    return np.maximum(0.5 - 0.5 * np.cos(axis), 1e-3)

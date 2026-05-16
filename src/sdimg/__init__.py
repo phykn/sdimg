@@ -1,3 +1,6 @@
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("sdimg")
+try:
+    __version__ = version("sdimg")
+except PackageNotFoundError:
+    __version__ = "0+unknown"

@@ -52,23 +52,23 @@ def _build_img(image: np.ndarray, roi: np.ndarray) -> np.ndarray:
 
 
 def _build_mask(roi: np.ndarray) -> np.ndarray:
-    din = distance_transform(roi)
-    dout = distance_transform((1 - roi).astype(np.uint8))
+    dist_in = distance_transform(roi)
+    dist_out = distance_transform((1 - roi).astype(np.uint8))
 
-    max_in = float(din.max())
-    max_out = float(dout.max())
+    max_in = float(dist_in.max())
+    max_out = float(dist_out.max())
 
-    th = min(max_in, max_out) / 5.0
+    threshold = min(max_in, max_out) / 5.0
 
-    if th <= 0:
+    if threshold <= 0:
         mask = np.full(roi.shape, cv2.GC_PR_BGD, dtype=np.uint8)
         mask[roi == 1] = cv2.GC_PR_FGD
         return mask
 
     mask = np.full(roi.shape, cv2.GC_BGD, dtype=np.uint8)
-    mask[(roi == 0) & (dout < th)] = cv2.GC_PR_BGD
-    mask[(roi == 1) & (din < th)] = cv2.GC_PR_FGD
-    mask[din >= th] = cv2.GC_FGD
+    mask[(roi == 0) & (dist_out < threshold)] = cv2.GC_PR_BGD
+    mask[(roi == 1) & (dist_in < threshold)] = cv2.GC_PR_FGD
+    mask[dist_in >= threshold] = cv2.GC_FGD
 
     return mask
 

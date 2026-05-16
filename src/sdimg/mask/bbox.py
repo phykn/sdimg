@@ -10,7 +10,7 @@ def get_coords(
     transpose: bool = False,
 ) -> np.ndarray:
     mask = to_mask(mask)
-    coords = np.argwhere(mask > 0)
+    coords = _coords_from_mask(mask)
 
     if transpose:
         return coords.T
@@ -49,14 +49,14 @@ def get_box_from_mask(
     mask: np.ndarray,
 ) -> BBox | None:
     mask = to_mask(mask)
-    return get_box_from_coords(get_coords(mask))
+    return _box_from_mask(mask)
 
 
 def to_roi_box(
     mask: np.ndarray,
 ) -> dict[str, object] | None:
     mask = to_mask(mask)
-    bbox = get_box_from_mask(mask)
+    bbox = _box_from_mask(mask)
     if bbox is None:
         return None
 
@@ -84,7 +84,7 @@ def get_centroid(
     mask: np.ndarray,
 ) -> tuple[float, float] | None:
     mask = to_mask(mask)
-    coords = get_coords(mask)
+    coords = _coords_from_mask(mask)
 
     if coords.shape[0] == 0:
         return None
@@ -92,3 +92,11 @@ def get_centroid(
     center_h = float(np.mean(coords[:, 0]))
     center_w = float(np.mean(coords[:, 1]))
     return (center_h, center_w)
+
+
+def _coords_from_mask(mask: np.ndarray) -> np.ndarray:
+    return np.argwhere(mask > 0)
+
+
+def _box_from_mask(mask: np.ndarray) -> BBox | None:
+    return get_box_from_coords(_coords_from_mask(mask))

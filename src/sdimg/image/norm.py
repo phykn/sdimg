@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import cv2
 import numpy as np
 
@@ -12,28 +14,28 @@ def clahe_norm(
 ) -> np.ndarray:
     image = ensure_image(image, name="image")
     image = to_uint8(image)
-
     clahe = cv2.createCLAHE(
         clipLimit=clipLimit,
         tileGridSize=tileGridSize,
     )
-    if image.ndim == 2:
-        return clahe.apply(image)
-
-    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-    ycrcb[..., 0] = clahe.apply(ycrcb[..., 0])
-    return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
+    return _apply_luminance(image, clahe.apply)
 
 
 def hist_norm(image: np.ndarray) -> np.ndarray:
     image = ensure_image(image, name="image")
     image = to_uint8(image)
+    return _apply_luminance(image, cv2.equalizeHist)
 
+
+def _apply_luminance(
+    image: np.ndarray,
+    transform: Callable[[np.ndarray], np.ndarray],
+) -> np.ndarray:
     if image.ndim == 2:
-        return cv2.equalizeHist(image)
+        return transform(image)
 
     ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-    ycrcb[..., 0] = cv2.equalizeHist(ycrcb[..., 0])
+    ycrcb[..., 0] = transform(ycrcb[..., 0])
     return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
 
 

@@ -15,5 +15,6 @@ venv/
 uv.lock
 
 .claude/
+AGENTS.md
 CLAUDE.md
 docs/
