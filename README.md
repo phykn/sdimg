@@ -1,6 +1,7 @@
 # sdimg
 
 Small, function-based image and mask processing library built on `numpy.ndarray`.
+The public API is pure functions and requires Python 3.12+.
 
 ## Install
 
@@ -10,51 +11,42 @@ pip install sdimg
 
 ## Modules
 
-- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `is_image`
-- `sdimg.mask`: `morphology`, `convex_hull`, `concave_hull`, `extract_edge`, `distance_transform`, `pick_largest`, `fill_holes`, `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size`, `to_roi_box`, `to_mask`, `is_mask`
-- `sdimg.spatial`: `resize`, `resize_keep_ratio`, `crop`, `pad_to_square`, `rotate`, `flip`, `split`, `merge`
-- `sdimg.fusion`: `otsu_threshold`, `grabcut`
+- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `is_image`.
+- `sdimg.mask`: `morphology`; `convex_hull`, `concave_hull`; `extract_edge`, `distance_transform`, `pick_largest`, `fill_holes`; `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size`, `to_roi_box`; `to_mask`, and `is_mask`.
+- `sdimg.spatial`: `resize`, `resize_keep_ratio`, `crop`, `pad_to_square`, `rotate`, `flip`, `split`, and `merge`.
+- `sdimg.fusion`: `otsu_threshold` and `grabcut`.
 
 ## Core Contracts
 
-- Input arrays must be `numpy.ndarray`
-- Images: shape `(H, W)` or `(H, W, C)` with `C in 1..4`
-- **Color channel order: RGB.** `cv2.imread` returns BGR — convert with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)` first.
-- **Channel-count semantics:**
-  - `C == 1`: grayscale
-  - `C == 2`: grayscale + alpha (alpha is ignored by `to_gray`/`to_rgb`)
-  - `C == 3`: RGB
-  - `C == 4`: RGBA (alpha is ignored by `to_gray`/`to_rgb`)
-- Masks: shape `(H, W)`, binary values (`bool`, `{0,1}`, `{0,255}`)
-- Output images are `np.uint8`
-- Output masks are binary `np.uint8` in `{0, 1}`
-- BBox format: `(wmin, hmin, wmax, hmax)`
-- Empty-mask returns `None` for:
-  - `to_roi_box`
-  - `get_box_from_mask`
-  - `get_box_from_coords`
-  - `get_centroid`
+- Inputs must be `numpy.ndarray`.
+- Images use shape `(H, W)` or `(H, W, C)` with `C in 1..4`.
+- Color images are RGB. If you read with `cv2.imread`, convert BGR to RGB first with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)`.
+- Channel counts mean: `1` grayscale, `2` grayscale + alpha, `3` RGB, and `4` RGBA. Alpha channels are ignored by `to_gray` and `to_rgb`.
+- Masks use shape `(H, W)` and binary values: `bool`, `{0, 1}`, or `{0, 255}`.
+- Output images are `np.uint8`; output masks are binary `np.uint8` in `{0, 1}`.
+- BBox format is `(wmin, hmin, wmax, hmax)`, width-first, min-inclusive, max-exclusive.
+- Empty masks return `None` from `to_roi_box`, `get_box_from_mask`, `get_box_from_coords`, and `get_centroid`.
 
 ## Error Policy
 
-- `TypeError`: wrong input type (non-`numpy.ndarray`)
-- `ValueError`: invalid shape, invalid params, invalid mask values, invalid bbox
-- `RuntimeError`: wrapped lower-level failures (`cv2`, internal processing)
+- `TypeError`: wrong input type.
+- `ValueError`: invalid shape, params, mask values, or bbox.
+- `RuntimeError`: wrapped lower-level failures from `cv2` or internal processing.
 
 ## Quick Example
 
 ```python
 import numpy as np
-from sdimg.image import hist_norm, gaussian_blur
-from sdimg.mask import morphology, to_roi_box
+
 from sdimg.fusion import grabcut
+from sdimg.image import gaussian_blur, hist_norm
+from sdimg.mask import morphology, to_roi_box
 
 image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
 mask = np.zeros((128, 128), dtype=np.uint8)
 mask[32:96, 40:88] = 1
 
-image = hist_norm(image)
-image = gaussian_blur(image, (5, 5), 1.2)
+image = gaussian_blur(hist_norm(image), (5, 5), 1.2)
 mask = morphology(mask, "open", (3, 3), 1)
 
 roi_box = to_roi_box(mask)
