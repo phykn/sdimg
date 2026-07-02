@@ -11,7 +11,7 @@ pip install sdimg
 
 ## Modules
 
-- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `is_image`.
+- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `get_id`, `encode`, `decode`, `imread`, `imwrite`, `is_image`.
 - `sdimg.mask`: `morphology`; `convex_hull`, `concave_hull`; `extract_edge`, `distance_transform`, `pick_largest`, `fill_holes`; `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size`, `to_roi_box`; `to_mask`, and `is_mask`.
 - `sdimg.spatial`: `resize`, `resize_keep_ratio`, `crop`, `pad_to_square`, `rotate`, `flip`, `split`, and `merge`.
 - `sdimg.fusion`: `otsu_threshold` and `grabcut`.
@@ -21,6 +21,7 @@ pip install sdimg
 - Inputs must be `numpy.ndarray`.
 - Images use shape `(H, W)` or `(H, W, C)` with `C in 1..4`.
 - Color images are RGB. If you read with `cv2.imread`, convert BGR to RGB first with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)`.
+- Pillow-backed file I/O reads images as RGB `np.uint8` arrays with shape `(H, W, 3)` and writes accepted `uint8` image arrays as RGB files.
 - Channel counts mean: `1` grayscale, `2` grayscale + alpha, `3` RGB, and `4` RGBA. Alpha channels are ignored by `to_gray` and `to_rgb`.
 - Masks use shape `(H, W)` and binary values: `bool`, `{0, 1}`, or `{0, 255}`.
 - Output images are `np.uint8`; output masks are binary `np.uint8` in `{0, 1}`.
