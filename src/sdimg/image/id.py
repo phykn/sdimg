@@ -11,6 +11,8 @@ def get_id(arr: np.ndarray, *, prefix: str = "", length: int = 8) -> str:
         raise TypeError("length must be an int.")
     if not 1 <= length <= 32:
         raise ValueError("length must be between 1 and 32.")
+    if arr.dtype.hasobject:
+        raise ValueError("arr must not have object dtype.")
 
     contiguous_arr = np.ascontiguousarray(arr)
     hasher = hashlib.md5()

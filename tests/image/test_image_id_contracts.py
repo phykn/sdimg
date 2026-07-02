@@ -32,6 +32,13 @@ def test_get_id_rejects_non_ndarray_input() -> None:
         get_id([1, 2, 3])  # type: ignore[arg-type]
 
 
+def test_get_id_rejects_object_dtype() -> None:
+    arr = np.array(["alpha", "beta"], dtype=object)
+
+    with pytest.raises(ValueError, match="object dtype"):
+        get_id(arr)
+
+
 @pytest.mark.parametrize("length", [0, -1, 33])
 def test_get_id_rejects_invalid_length_value(length: int) -> None:
     with pytest.raises(ValueError, match="length must be between 1 and 32"):

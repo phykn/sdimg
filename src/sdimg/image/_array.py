@@ -3,7 +3,8 @@ import numpy as np
 from .._core.validate import ensure_ndarray
 
 UINT8_IMAGE_SHAPE_ERROR = (
-    "image must have shape (H, W), (H, W, 1), (H, W, 3), or (H, W, 4)."
+    "image must have shape (H, W), (H, W, 1), (H, W, 2), (H, W, 3), or "
+    "(H, W, 4)."
 )
 
 
@@ -17,7 +18,7 @@ def to_pillow_uint8_array(image: np.ndarray) -> tuple[np.ndarray, int]:
         raise ValueError(UINT8_IMAGE_SHAPE_ERROR)
 
     channels = image.shape[2]
-    if channels == 1:
+    if channels in {1, 2}:
         return image[..., 0], 1
     if channels in {3, 4}:
         return image, channels

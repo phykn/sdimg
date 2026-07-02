@@ -42,6 +42,20 @@ def test_imwrite_accepts_single_channel_3d_and_reads_back_rgb(tmp_path: Path) ->
     assert np.array_equal(out, np.repeat(image, 3, axis=2))
 
 
+def test_imwrite_accepts_two_channel_grayscale_alpha_and_ignores_alpha(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "gray_alpha.png"
+    gray = np.arange(100, dtype=np.uint8).reshape(10, 10)
+    image = np.stack([gray, np.full_like(gray, 17)], axis=2)
+
+    imwrite(path, image)
+    out = imread(path)
+
+    assert out.shape == (10, 10, 3)
+    assert np.array_equal(out, np.repeat(gray[..., None], 3, axis=2))
+
+
 def test_imwrite_accepts_rgba_and_reads_back_rgb(tmp_path: Path) -> None:
     path = tmp_path / "rgba.png"
     image = np.zeros((10, 10, 4), dtype=np.uint8)
@@ -69,7 +83,6 @@ def test_imwrite_rejects_non_uint8(tmp_path: Path) -> None:
     "image",
     [
         np.zeros((2, 3, 4, 1), dtype=np.uint8),
-        np.zeros((4, 4, 2), dtype=np.uint8),
         np.zeros((4, 4, 5), dtype=np.uint8),
     ],
 )

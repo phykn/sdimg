@@ -23,7 +23,7 @@ from sdimg.image import decode, encode, get_id, imread, imwrite
 
 ### `get_id(arr, *, prefix="", length=8) -> str`
 
-Create a deterministic MD5-based ID for any `numpy.ndarray`.
+Create a deterministic MD5-based ID for any non-object `numpy.ndarray`.
 
 The digest includes:
 
@@ -31,15 +31,16 @@ The digest includes:
 - `arr.shape`;
 - contiguous byte content.
 
-This preserves the `imid` behavior and intentionally does not restrict input
-to valid image shapes. It remains useful for masks, intermediate arrays, and
-non-image ndarray values.
+This preserves the `imid` behavior for stable byte-backed arrays and
+intentionally does not restrict input to valid image shapes. It remains useful
+for masks, intermediate arrays, and non-image ndarray values.
 
 Validation:
 
 - raise `TypeError` when `arr` is not a `numpy.ndarray`;
 - raise `TypeError` when `length` is not an `int` or is `bool`;
-- raise `ValueError` when `length` is outside `1..32`.
+- raise `ValueError` when `length` is outside `1..32`;
+- raise `ValueError` when `arr` has object dtype.
 
 ### `encode(image, *, method=0, quality=0) -> str`
 
@@ -50,15 +51,16 @@ Accepted shapes:
 
 - `(H, W)`;
 - `(H, W, 1)`;
+- `(H, W, 2)`;
 - `(H, W, 3)`;
 - `(H, W, 4)`.
 
-`(H, W, 2)` is a valid `sdimg` image shape, but it represents grayscale plus
-alpha. The codec will not support it because Pillow WebP does not preserve that
-two-channel shape directly and the old `imstr` contract did not support it.
+For `(H, W, 2)`, the first channel is encoded as grayscale and alpha is ignored
+to match the project image contract.
 
 Shape restoration uses a short payload prefix before the WebP bytes. Grayscale
-inputs, including `(H, W, 1)`, are stored as grayscale and decode to `(H, W)`.
+inputs, including `(H, W, 1)` and `(H, W, 2)`, are stored as grayscale and
+decode to `(H, W)`.
 RGB and RGBA inputs decode to their original 3-channel or 4-channel array shape.
 
 Validation:
@@ -105,13 +107,12 @@ Accepted shapes:
 
 - `(H, W)`;
 - `(H, W, 1)`;
+- `(H, W, 2)`;
 - `(H, W, 3)`;
 - `(H, W, 4)`.
 
-`(H, W, 2)` is rejected for the same reason as `encode`: preserving
-grayscale-plus-alpha as an RGB output would silently drop the documented alpha
-semantics. Callers can explicitly convert with `to_rgb` or select channels
-before writing.
+For `(H, W, 2)`, the first channel is written as grayscale and alpha is ignored
+to match the project image contract.
 
 `**kwargs` are forwarded to `PIL.Image.Image.save`.
 
@@ -156,16 +157,16 @@ Required coverage:
 
 - `get_id` is deterministic and changes with dtype, shape, and content;
 - `get_id` handles non-contiguous arrays like contiguous copies;
-- `get_id` validates `arr` and `length`;
+- `get_id` validates `arr`, object dtype, and `length`;
 - `encode`/`decode` round-trip 2D grayscale, 3D RGB, and 3D RGBA `uint8`;
-- `encode` accepts `(H, W, 1)` and decodes it as 2D grayscale;
-- `encode` rejects non-`uint8`, invalid ndim, channel count 2, and invalid
-  channel count;
+- `encode` accepts `(H, W, 1)` and `(H, W, 2)` and decodes them as 2D
+  grayscale;
+- `encode` rejects non-`uint8`, invalid ndim, and invalid channel count;
 - `decode` rejects invalid base64, invalid prefix, and invalid WebP payload;
 - `imread`/`imwrite` round-trip RGB through a temporary file;
-- `imwrite` accepts 2D grayscale, `(H, W, 1)`, RGB, and RGBA and reads back RGB;
-- `imwrite` rejects non-`uint8`, invalid ndim, channel count 2, and invalid
-  channel count;
+- `imwrite` accepts 2D grayscale, `(H, W, 1)`, `(H, W, 2)`, RGB, and RGBA and
+  reads back RGB;
+- `imwrite` rejects non-`uint8`, invalid ndim, and invalid channel count;
 - `imread` handles high-bit-depth integer and float source files by scaling to
   `uint8` before RGB output.
 
