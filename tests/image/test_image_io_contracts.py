@@ -94,15 +94,29 @@ def test_imwrite_wraps_save_failures(tmp_path: Path) -> None:
         imwrite(target_dir, np.zeros((4, 4, 3), dtype=np.uint8))
 
 
-def test_imread_matches_pillow_rgb_conversion_for_uint16_tiff(tmp_path: Path) -> None:
+def test_imread_scales_uint16_tiff_to_uint8_rgb(tmp_path: Path) -> None:
     path = tmp_path / "source.tif"
-    data = np.linspace(0, 65535, 25, dtype=np.uint16).reshape(5, 5)
+    data = np.array([[0, 255, 256, 32768, 65535]], dtype=np.uint16)
     Image.fromarray(data).save(path)
-
-    with Image.open(path) as image:
-        expected = np.array(image.convert("RGB"))
 
     out = imread(path)
 
     assert out.dtype == np.uint8
-    assert np.array_equal(out, expected)
+    assert out.shape == (1, 5, 3)
+    assert out[0, :, 0].tolist() == [0, 1, 1, 128, 255]
+    assert np.array_equal(out[..., 0], out[..., 1])
+    assert np.array_equal(out[..., 0], out[..., 2])
+
+
+def test_imread_scales_float_tiff_to_uint8_rgb(tmp_path: Path) -> None:
+    path = tmp_path / "float.tif"
+    data = np.array([[0.0, 0.5, 1.0]], dtype=np.float32)
+    Image.fromarray(data).save(path)
+
+    out = imread(path)
+
+    assert out.dtype == np.uint8
+    assert out.shape == (1, 3, 3)
+    assert out[0, :, 0].tolist() == [0, 128, 255]
+    assert np.array_equal(out[..., 0], out[..., 1])
+    assert np.array_equal(out[..., 0], out[..., 2])

@@ -21,7 +21,7 @@ pip install sdimg
 - Inputs must be `numpy.ndarray`.
 - Images use shape `(H, W)` or `(H, W, C)` with `C in 1..4`.
 - Color images are RGB. If you read with `cv2.imread`, convert BGR to RGB first with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)`.
-- Pillow-backed file I/O reads images as RGB `np.uint8` arrays with shape `(H, W, 3)` and writes accepted `uint8` image arrays as RGB files.
+- Pillow-backed file I/O reads images as RGB `np.uint8` arrays with shape `(H, W, 3)`. High-bit-depth integer and float sources are explicitly scaled to `uint8` before RGB conversion. Writing accepts only `uint8` image arrays and saves RGB files.
 - Channel counts mean: `1` grayscale, `2` grayscale + alpha, `3` RGB, and `4` RGBA. Alpha channels are ignored by `to_gray` and `to_rgb`.
 - Masks use shape `(H, W)` and binary values: `bool`, `{0, 1}`, or `{0, 255}`.
 - Output images are `np.uint8`; output masks are binary `np.uint8` in `{0, 1}`.
