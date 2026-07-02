@@ -88,8 +88,9 @@ Validation:
 Read an image file with Pillow and return RGB `np.uint8` data with shape
 `(H, W, 3)`.
 
-This follows `imrw`: source modes such as grayscale, RGBA, palette, CMYK, and
-integer or float TIFF are converted through Pillow's `RGB` conversion.
+This follows `imrw` for broad Pillow format support, but normalizes arrays
+explicitly before RGB conversion: high-bit-depth integer and float sources are
+scaled to `uint8`, then converted to RGB output.
 
 Validation and lower-level failures should use the existing project policy:
 
@@ -165,7 +166,8 @@ Required coverage:
 - `imwrite` accepts 2D grayscale, `(H, W, 1)`, RGB, and RGBA and reads back RGB;
 - `imwrite` rejects non-`uint8`, invalid ndim, channel count 2, and invalid
   channel count;
-- `imread` handles source files according to Pillow RGB conversion.
+- `imread` handles high-bit-depth integer and float source files by scaling to
+  `uint8` before RGB output.
 
 Verification command:
 
