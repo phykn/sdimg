@@ -54,3 +54,17 @@ roi_box = to_roi_box(mask)
 if roi_box is not None:
     refined = grabcut(image=image, roi=roi_box["roi"], box=roi_box["box"])
 ```
+
+## Image I/O And IDs
+
+```python
+from sdimg.image import decode, encode, get_id, imread, imwrite
+
+image = imread("input.tif")  # RGB uint8, shape (H, W, 3)
+image_id = get_id(image, prefix="img_")
+
+payload = encode(image)
+restored = decode(payload)
+
+imwrite(f"{image_id}.png", restored)
+```
