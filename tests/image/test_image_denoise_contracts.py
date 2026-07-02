@@ -10,16 +10,9 @@ def test_denoise_rejects_invalid_image_shape() -> None:
         denoise(src)
 
 
-def test_denoise_handles_4_channel_image() -> None:
-    src = np.zeros((10, 10, 4), dtype=np.uint8)
-    out = denoise(src)
-    assert out.dtype == np.uint8
-    assert out.ndim == 2
-    assert out.shape == (10, 10)
-
-
-def test_denoise_handles_2_channel_image() -> None:
-    src = np.zeros((10, 10, 2), dtype=np.uint8)
+@pytest.mark.parametrize("channels", [2, 4])
+def test_denoise_ignores_alpha_channels(channels: int) -> None:
+    src = np.zeros((10, 10, channels), dtype=np.uint8)
     out = denoise(src)
     assert out.dtype == np.uint8
     assert out.ndim == 2

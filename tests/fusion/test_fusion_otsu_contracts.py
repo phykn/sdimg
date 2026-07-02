@@ -4,15 +4,6 @@ import pytest
 from sdimg.fusion import otsu_threshold
 
 
-def test_otsu_threshold_returns_binary_uint8() -> None:
-    src = np.array([[0, 10, 200], [30, 50, 255]], dtype=np.uint8)
-    out = otsu_threshold(src, scale=1.0)
-
-    assert out.dtype == np.uint8
-    assert out.shape == src.shape
-    assert set(np.unique(out).tolist()) <= {0, 1}
-
-
 def test_otsu_threshold_rejects_negative_scale() -> None:
     src = np.zeros((4, 4), dtype=np.uint8)
     with pytest.raises(ValueError, match="scale must be greater than or equal to 0"):
@@ -36,6 +27,7 @@ def test_otsu_threshold_binarizes_bimodal_image() -> None:
     src[:5, :] = 200
     out = otsu_threshold(src, scale=1.0)
     assert out.dtype == np.uint8
+    assert out.shape == src.shape
     assert set(np.unique(out).tolist()) <= {0, 1}
     assert np.all(out[:5, :] == 1)
     assert np.all(out[5:, :] == 0)

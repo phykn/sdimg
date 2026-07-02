@@ -20,20 +20,20 @@ def test_distance_transform_returns_valid_distances() -> None:
     assert out[0, 0] <= out[2, 2]
 
 
-def test_distance_transform_l1_returns_float32() -> None:
+@pytest.mark.parametrize("distance_type", ["l1", "c"])
+def test_distance_transform_supports_distance_types(distance_type: str) -> None:
     src = np.zeros((7, 7), dtype=np.uint8)
     src[2:5, 2:5] = 1
-    out = distance_transform(src, distance_type="l1")
+    out = distance_transform(src, distance_type=distance_type)  # type: ignore[arg-type]
     assert out.dtype == np.float32
     assert out[3, 3] > out[2, 2]
 
 
-def test_distance_transform_c_returns_float32() -> None:
-    src = np.zeros((7, 7), dtype=np.uint8)
-    src[2:5, 2:5] = 1
-    out = distance_transform(src, distance_type="c")
+def test_distance_transform_empty_mask_returns_zeros() -> None:
+    src = np.zeros((5, 5), dtype=np.uint8)
+    out = distance_transform(src)
     assert out.dtype == np.float32
-    assert out[3, 3] > 0
+    assert np.array_equal(out, np.zeros_like(src, dtype=np.float32))
 
 
 def test_distance_transform_rejects_invalid_type() -> None:
