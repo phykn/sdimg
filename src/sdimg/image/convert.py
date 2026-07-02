@@ -1,6 +1,6 @@
 import numpy as np
 
-from .._core.validate import ensure_image, ensure_ndarray
+from ..core.validate import ensure_image, ensure_ndarray
 
 
 def is_image(image: object) -> bool:

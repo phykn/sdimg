@@ -2,7 +2,7 @@ import hashlib
 
 import numpy as np
 
-from .._core.validate import ensure_ndarray
+from ..core.validate import ensure_ndarray
 
 
 def get_id(arr: np.ndarray, *, prefix: str = "", length: int = 8) -> str:

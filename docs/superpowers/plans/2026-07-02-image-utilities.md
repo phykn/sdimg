@@ -4,7 +4,7 @@
 
 **Goal:** Add `get_id`, `encode`, `decode`, `imread`, and `imwrite` to `sdimg.image`.
 
-**Architecture:** Keep the public API flat in `sdimg.image`, but split implementations into small files by responsibility: ID generation, WebP/base64 string codec, and Pillow file I/O. Use the existing `_core` validators for ndarray type checks and keep `sdimg` error categories.
+**Architecture:** Keep the public API flat in `sdimg.image`, but split implementations into small files by responsibility: ID generation, WebP/base64 string codec, and Pillow file I/O. Use the existing `core` validators for ndarray type checks and keep `sdimg` error categories.
 
 **Tech Stack:** Python 3.13 in `.venv`, NumPy, Pillow, pytest, existing OpenCV dependency.
 
@@ -111,7 +111,7 @@ import hashlib
 
 import numpy as np
 
-from .._core.validate import ensure_ndarray
+from ..core.validate import ensure_ndarray
 
 
 def get_id(arr: np.ndarray, *, prefix: str = "", length: int = 8) -> str:
@@ -302,7 +302,7 @@ import io
 import numpy as np
 from PIL import Image
 
-from .._core.validate import ensure_ndarray
+from ..core.validate import ensure_ndarray
 
 
 def encode(image: np.ndarray, *, method: int = 0, quality: int = 0) -> str:
@@ -530,7 +530,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from .._core.validate import ensure_ndarray
+from ..core.validate import ensure_ndarray
 
 
 def imread(path: str | Path) -> np.ndarray:

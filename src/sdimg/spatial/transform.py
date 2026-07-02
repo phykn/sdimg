@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Literal
 
-from .._core.validate import ensure_src
+from ..core.validate import ensure_src
 
 Rotation = Literal[0, 90, 180, 270]
 FlipDirection = Literal["horizontal", "vertical", "transpose"]

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .._core.validate import ensure_image
+from ..core.validate import ensure_image
 from ..image.convert import to_gray
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from .._core.validate import ensure_ndarray
+from ..core.validate import ensure_ndarray
 
 UINT8_IMAGE_SHAPE_ERROR = (
     "image must have shape (H, W), (H, W, 1), (H, W, 2), (H, W, 3), or "

@@ -1,6 +1,6 @@
 import numpy as np
 
-from .._core.validate import ensure_mask
+from ..core.validate import ensure_mask
 
 
 def is_mask(mask: object) -> bool:

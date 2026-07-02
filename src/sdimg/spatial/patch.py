@@ -1,7 +1,7 @@
 import numpy as np
 
-from .._core.types import BBox
-from .._core.validate import ensure_src
+from ..core.types import BBox
+from ..core.validate import ensure_src
 from ..image.convert import to_uint8
 from .patch_impl import merge_patches, resolve_patch_axis
 

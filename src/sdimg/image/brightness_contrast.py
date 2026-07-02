@@ -1,6 +1,6 @@
 import numpy as np
 
-from .._core.validate import ensure_image
+from ..core.validate import ensure_image
 from .convert import to_uint8
 
 

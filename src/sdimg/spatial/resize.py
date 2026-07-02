@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .._core.validate import ensure_src
+from ..core.validate import ensure_src
 
 
 def resize(

@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from .._core.types import BBox
+from ..core.types import BBox
 
 
 def resolve_patch_axis(

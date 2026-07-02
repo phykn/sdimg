@@ -1,7 +1,7 @@
 import numpy as np
 
-from .._core.types import BBox
-from .._core.validate import ensure_ndarray
+from ..core.types import BBox
+from ..core.validate import ensure_ndarray
 from .convert import to_mask
 
 
