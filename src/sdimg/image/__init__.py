@@ -5,3 +5,4 @@ from .denoise import denoise
 from .id import get_id
 from .norm import clahe_norm, hist_norm, minmax_norm, zscore_norm
 from .sharpen import sharpen
+from .string import decode, encode
