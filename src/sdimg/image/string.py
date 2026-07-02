@@ -4,7 +4,7 @@ import io
 import numpy as np
 from PIL import Image
 
-from ._array import to_pillow_uint8_array
+from .array import to_pillow_uint8_array
 
 
 def encode(image: np.ndarray, *, method: int = 0, quality: int = 0) -> str:

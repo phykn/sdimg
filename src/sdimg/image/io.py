@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from ._array import scale_to_uint8, to_pillow_uint8_array, to_rgb_uint8
+from .array import scale_to_uint8, to_pillow_uint8_array, to_rgb_uint8
 
 
 def imread(path: str | Path) -> np.ndarray:

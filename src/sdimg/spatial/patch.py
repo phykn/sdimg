@@ -3,7 +3,7 @@ import numpy as np
 from .._core.types import BBox
 from .._core.validate import ensure_src
 from ..image.convert import to_uint8
-from ._patch_impl import merge_patches, resolve_patch_axis
+from .patch_impl import merge_patches, resolve_patch_axis
 
 
 def split(
