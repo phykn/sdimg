@@ -4,12 +4,12 @@ import io
 import numpy as np
 from PIL import Image
 
-from .._core.validate import ensure_ndarray
+from ._array import to_pillow_uint8_array
 
 
 def encode(image: np.ndarray, *, method: int = 0, quality: int = 0) -> str:
-    image = ensure_ndarray(image, name="image")
-    payload_prefix, image_for_pillow = _prepare_encode_image(image)
+    image_for_pillow, channels = to_pillow_uint8_array(image)
+    payload_prefix = _payload_prefix(channels)
 
     try:
         buffer = io.BytesIO()
@@ -50,23 +50,11 @@ def decode(encoded: str) -> np.ndarray:
         raise ValueError(f"failed to deserialize array: {exc}") from exc
 
 
-def _prepare_encode_image(image: np.ndarray) -> tuple[bytes, np.ndarray]:
-    if image.dtype != np.uint8:
-        raise ValueError("image must have dtype uint8.")
-    if image.ndim == 2:
-        return b"L", image
-    if image.ndim != 3:
-        raise ValueError(
-            "image must have shape (H, W), (H, W, 1), (H, W, 3), or (H, W, 4)."
-        )
-
-    channels = image.shape[2]
+def _payload_prefix(channels: int) -> bytes:
     if channels == 1:
-        return b"L", image[..., 0]
+        return b"L"
     if channels == 3:
-        return b"R", image
+        return b"R"
     if channels == 4:
-        return b"A", image
-    raise ValueError(
-        "image must have shape (H, W), (H, W, 1), (H, W, 3), or (H, W, 4)."
-    )
+        return b"A"
+    raise ValueError("channels must be one of 1, 3, or 4.")
