@@ -65,7 +65,7 @@ def test_to_mask_rejects_mixed_0_1_255() -> None:
         to_mask(src)
 
 
-def test_to_mask_rejects_float_dtype_with_binary_values() -> None:
+def test_to_mask_accepts_float_dtype_with_binary_values() -> None:
     # Current behavior: floats with {0.0, 1.0} are accepted because set subset
     # check succeeds. After refactor the behavior must be preserved.
     src = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=np.float32)
