@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from sdimg.spatial import resize, resize_keep_ratio
+from sdimg.spatial import resize, resize_to_long_side
 
 
 def test_resize_with_only_width_preserves_aspect_ratio() -> None:
@@ -19,32 +19,32 @@ def test_resize_requires_height_or_width() -> None:
 
 def test_resize_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="src must have shape"):
+    with pytest.raises(ValueError, match="array must have shape"):
         resize(src, width=10)
 
 
-def test_resize_keep_ratio_rejects_invalid_src_ndim() -> None:
+def test_resize_to_long_side_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="src must have shape"):
-        resize_keep_ratio(src, long_side=10)
+    with pytest.raises(ValueError, match="array must have shape"):
+        resize_to_long_side(src, long_side=10)
 
 
-def test_resize_keep_ratio_preserves_aspect_ratio() -> None:
+def test_resize_to_long_side_preserves_aspect_ratio() -> None:
     src = np.zeros((10, 20, 3), dtype=np.uint8)
-    out = resize_keep_ratio(src, long_side=40)
+    out = resize_to_long_side(src, long_side=40)
     assert out.shape == (20, 40, 3)
 
 
-def test_resize_keep_ratio_scales_down() -> None:
+def test_resize_to_long_side_scales_down() -> None:
     src = np.zeros((100, 200), dtype=np.uint8)
-    out = resize_keep_ratio(src, long_side=100)
+    out = resize_to_long_side(src, long_side=100)
     assert out.shape == (50, 100)
 
 
-def test_resize_keep_ratio_rejects_non_positive_long_side() -> None:
+def test_resize_to_long_side_rejects_non_positive_long_side() -> None:
     src = np.zeros((10, 10), dtype=np.uint8)
     with pytest.raises(ValueError, match="long_side must be greater than 0"):
-        resize_keep_ratio(src, long_side=0)
+        resize_to_long_side(src, long_side=0)
 
 
 def test_resize_with_both_height_and_width() -> None:

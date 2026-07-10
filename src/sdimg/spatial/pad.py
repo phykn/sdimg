@@ -1,27 +1,24 @@
 import numpy as np
 
 from ..core.types import BBox
-from ..core.validate import ensure_src
+from ..core.validation import validate_source
 
 
 def pad_to_square(
-    src: np.ndarray,
-    return_box: bool = False,
+    array: np.ndarray,
+    return_bbox: bool = False,
 ) -> np.ndarray | tuple[np.ndarray, BBox]:
-    src = ensure_src(src, name="src")
+    array = validate_source(array)
+    if not isinstance(return_bbox, bool):
+        raise TypeError("return_bbox must be a bool.")
 
-    height, width = src.shape[:2]
+    height, width = array.shape[:2]
     bottom = max(0, width - height)
     right = max(0, height - width)
-    top, left = 0, 0
-
-    if src.ndim == 2:
-        pad_width = ((top, bottom), (left, right))
-    else:
-        pad_width = ((top, bottom), (left, right), (0, 0))
-
-    result = np.pad(src, pad_width, mode="constant", constant_values=0)
-    box = (left, top, left + width, top + height)
-    if return_box:
-        return result, box
-    return result
+    pad_width = ((0, bottom), (0, right))
+    if array.ndim == 3:
+        pad_width += ((0, 0),)
+    result = np.pad(array, pad_width, mode="constant", constant_values=0)
+    result = np.ascontiguousarray(result)
+    bbox = (0, 0, width, height)
+    return (result, bbox) if return_bbox else result

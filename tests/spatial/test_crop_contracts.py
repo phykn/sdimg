@@ -6,13 +6,13 @@ from sdimg.spatial import crop
 
 def test_crop_rejects_invalid_bbox() -> None:
     src = np.zeros((5, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="bbox is out of bounds or invalid"):
+    with pytest.raises(ValueError, match="bbox is outside array bounds"):
         crop(src, bbox=(0, 0, 6, 4))
 
 
 def test_crop_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="src must have shape"):
+    with pytest.raises(ValueError, match="array must have shape"):
         crop(src, bbox=(0, 0, 1, 1))
 
 

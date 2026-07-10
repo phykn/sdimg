@@ -1,33 +1,30 @@
-import numpy as np
 from typing import Literal
 
-from ..core.validate import ensure_src
+import numpy as np
+
+from ..core.validation import validate_source
 
 Rotation = Literal[0, 90, 180, 270]
 FlipDirection = Literal["horizontal", "vertical", "transpose"]
 
 
-def rotate(
-    src: np.ndarray,
-    rotation: Rotation = 0,
-) -> np.ndarray:
-    src = ensure_src(src, name="src")
-
-    if rotation not in {0, 90, 180, 270}:
-        raise ValueError("rotation must be one of 0, 90, 180, 270.")
-    return np.rot90(src, k=rotation // 90)
+def rotate(array: np.ndarray, degrees: Rotation = 0) -> np.ndarray:
+    array = validate_source(array)
+    if not isinstance(degrees, int) or isinstance(degrees, bool):
+        raise TypeError("degrees must be an int.")
+    if degrees not in {0, 90, 180, 270}:
+        raise ValueError("degrees must be one of 0, 90, 180, 270.")
+    return np.ascontiguousarray(np.rot90(array, k=degrees // 90)).copy()
 
 
-def flip(
-    src: np.ndarray,
-    direction: FlipDirection,
-) -> np.ndarray:
-    src = ensure_src(src, name="src")
-
+def flip(array: np.ndarray, direction: FlipDirection) -> np.ndarray:
+    array = validate_source(array)
     if direction == "horizontal":
-        return np.flip(src, axis=1)
-    if direction == "vertical":
-        return np.flip(src, axis=0)
-    if direction == "transpose":
-        return np.swapaxes(src, 0, 1)
-    raise ValueError("direction must be one of horizontal, vertical, transpose.")
+        result = np.flip(array, axis=1)
+    elif direction == "vertical":
+        result = np.flip(array, axis=0)
+    elif direction == "transpose":
+        result = np.swapaxes(array, 0, 1)
+    else:
+        raise ValueError("direction must be one of horizontal, vertical, transpose.")
+    return np.ascontiguousarray(result).copy()

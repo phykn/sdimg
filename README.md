@@ -1,7 +1,7 @@
 # sdimg
 
-Small, function-based image and mask processing library built on `numpy.ndarray`.
-The public API is pure functions and requires Python 3.12+.
+Small, function-based image and mask processing library built on
+`numpy.ndarray`. The public API is pure functions and requires Python 3.12+.
 
 ## Install
 
@@ -11,60 +11,91 @@ pip install sdimg
 
 ## Modules
 
-- `sdimg.image`: `hist_norm`, `clahe_norm`, `minmax_norm`, `zscore_norm`, `gaussian_blur`, `median_blur`, `denoise`, `sharpen`, `adjust_brightness_contrast`, `to_gray`, `to_rgb`, `to_uint8`, `get_id`, `encode`, `decode`, `imread`, `imwrite`, `is_image`.
-- `sdimg.mask`: `morphology`; `convex_hull`, `concave_hull`; `extract_edge`, `distance_transform`, `pick_largest`, `fill_holes`; `get_box_from_mask`, `get_box_from_coords`, `get_coords`, `get_centroid`, `get_roi_size`, `get_box_size`, `to_roi_box`; `to_mask`, and `is_mask`.
-- `sdimg.spatial`: `resize`, `resize_keep_ratio`, `crop`, `pad_to_square`, `rotate`, `flip`, `split`, and `merge`.
-- `sdimg.fusion`: `otsu_threshold` and `grabcut`.
+- `sdimg.image`: image conversion, filtering, enhancement, normalization,
+  deterministic array IDs, lossless string codecs, and file I/O.
+- `sdimg.mask`: binary conversion, geometry, connected components,
+  morphology, hulls, and distance transforms.
+- `sdimg.spatial`: crop, pad, resize, rotate, flip, and tile split/merge.
+- `sdimg.segment`: Otsu thresholding and GrabCut refinement.
+
+Public imports are flat within each domain:
+
+```python
+from sdimg.image import apply_gaussian_blur, equalize_histogram
+from sdimg.mask import apply_morphology, extract_roi
+from sdimg.segment import refine_grabcut
+```
 
 ## Core Contracts
 
-- Inputs must be `numpy.ndarray`.
-- Images use shape `(H, W)` or `(H, W, C)` with `C in 1..4`.
-- Color images are RGB. If you read with `cv2.imread`, convert BGR to RGB first with `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)`.
-- Pillow-backed file I/O reads images as RGB `np.uint8` arrays with shape `(H, W, 3)`. High-bit-depth integer and float sources are explicitly scaled to `uint8` before RGB conversion. Writing accepts only `uint8` image arrays and saves RGB files.
-- Channel counts mean: `1` grayscale, `2` grayscale + alpha, `3` RGB, and `4` RGBA. Alpha channels are ignored by `to_gray` and `to_rgb`.
-- Masks use shape `(H, W)` and binary values: `bool`, `{0, 1}`, or `{0, 255}`.
-- Output images are `np.uint8`; output masks are binary `np.uint8` in `{0, 1}`.
-- BBox format is `(wmin, hmin, wmax, hmax)`, width-first, min-inclusive, max-exclusive.
-- Empty masks return `None` from `to_roi_box`, `get_box_from_mask`, `get_box_from_coords`, and `get_centroid`.
+- Inputs are `numpy.ndarray` values with real numeric or boolean dtype.
+- Images use non-empty shape `(H, W)` or `(H, W, C)` with `C in {1, 2, 3, 4}`.
+- Color images are RGB. Convert OpenCV BGR inputs before calling `sdimg`.
+- Channel meanings are grayscale, grayscale+alpha, RGB, and RGBA.
+- `sdimg.image` processing returns `np.uint8`. Filters and enhancement preserve
+  channel shape and leave alpha content unchanged.
+- Masks use non-empty shape `(H, W)` and values `bool`, `{0, 1}`, or `{0, 255}`.
+  Mask processing returns binary `np.uint8` in `{0, 1}`; distance transforms
+  return `np.float32`.
+- `sdimg.spatial` operations preserve input dtype and channel shape.
+- Points use `(x, y)`. Bounding boxes use
+  `(xmin, ymin, xmax, ymax)`, minimum-inclusive and maximum-exclusive.
+- Empty mask geometry returns `None` where no geometry exists.
 
 ## Error Policy
 
-- `TypeError`: wrong input type.
-- `ValueError`: invalid shape, params, mask values, or bbox.
-- `RuntimeError`: wrapped lower-level failures from `cv2` or internal processing.
+- `TypeError`: wrong Python input type.
+- `ValueError`: invalid shape, dtype, parameter, mask value, or bbox.
+- `RuntimeError`: wrapped OpenCV, Pillow, or third-party failure.
 
 ## Quick Example
 
 ```python
 import numpy as np
 
-from sdimg.fusion import grabcut
-from sdimg.image import gaussian_blur, hist_norm
-from sdimg.mask import morphology, to_roi_box
+from sdimg.image import apply_gaussian_blur, equalize_histogram
+from sdimg.mask import apply_morphology, extract_roi
+from sdimg.segment import refine_grabcut
 
-image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
+image = np.random.default_rng(0).integers(
+    0,
+    256,
+    (128, 128, 3),
+    dtype=np.uint8,
+)
 mask = np.zeros((128, 128), dtype=np.uint8)
 mask[32:96, 40:88] = 1
 
-image = gaussian_blur(hist_norm(image), (5, 5), 1.2)
-mask = morphology(mask, "open", (3, 3), 1)
+image = equalize_histogram(image)
+image = apply_gaussian_blur(image, kernel_size=(5, 5), sigma_x=1.2)
+mask = apply_morphology(mask, operation="open", kernel_size=(3, 3))
 
-roi_box = to_roi_box(mask)
-if roi_box is not None:
-    refined = grabcut(image=image, roi=roi_box["roi"], box=roi_box["box"])
+roi_result = extract_roi(mask)
+if roi_result is not None:
+    roi_mask, bbox = roi_result
+    refined = refine_grabcut(image, roi_mask, bbox)
 ```
 
-## Image I/O And IDs
+## Supporting Image Utilities
 
 ```python
-from sdimg.image import decode, encode, get_id, imread, imwrite
+from sdimg.image import (
+    decode_image,
+    encode_image,
+    make_array_id,
+    read_image,
+    write_image,
+)
 
-image = imread("input.tif")  # RGB uint8, shape (H, W, 3)
-image_id = get_id(image, prefix="img_")
+image = read_image("input.tif")
+image_id = make_array_id(image, prefix="img_")
 
-payload = encode(image)
-restored = decode(payload)
-
-imwrite(f"{image_id}.png", restored)
+payload = encode_image(image)
+restored = decode_image(payload)
+write_image(f"{image_id}.png", restored)
 ```
+
+`read_image` returns RGB `uint8`. High-bit-depth and floating images are scaled
+explicitly before RGB conversion. `write_image` writes RGB and ignores alpha.
+The lossless WebP string codec preserves RGBA alpha and ignores
+grayscale+alpha's alpha channel.

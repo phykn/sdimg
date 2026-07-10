@@ -11,12 +11,13 @@ def test_denoise_rejects_invalid_image_shape() -> None:
 
 
 @pytest.mark.parametrize("channels", [2, 4])
-def test_denoise_ignores_alpha_channels(channels: int) -> None:
+def test_denoise_preserves_alpha_channels(channels: int) -> None:
     src = np.zeros((10, 10, channels), dtype=np.uint8)
+    src[..., -1] = np.arange(100, dtype=np.uint8).reshape(10, 10)
     out = denoise(src)
     assert out.dtype == np.uint8
-    assert out.ndim == 2
-    assert out.shape == (10, 10)
+    assert out.shape == src.shape
+    assert np.array_equal(out[..., -1], src[..., -1])
 
 
 def test_denoise_returns_uint8_and_same_shape_for_gray_and_rgb() -> None:

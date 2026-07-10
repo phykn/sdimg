@@ -6,7 +6,7 @@ from sdimg.spatial import flip, rotate
 
 def test_rotate_and_flip_contract() -> None:
     src = np.arange(6, dtype=np.uint8).reshape(2, 3)
-    rotated = rotate(src, rotation=90)
+    rotated = rotate(src, degrees=90)
     flipped = flip(src, direction="horizontal")
 
     assert rotated.shape == (3, 2)
@@ -15,38 +15,38 @@ def test_rotate_and_flip_contract() -> None:
 
 def test_rotate_rejects_invalid_angle() -> None:
     src = np.zeros((2, 2), dtype=np.uint8)
-    with pytest.raises(ValueError, match="rotation must be one of"):
-        rotate(src, rotation=45)
+    with pytest.raises(ValueError, match="degrees must be one of"):
+        rotate(src, degrees=45)
 
 
 def test_rotate_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="src must have shape"):
-        rotate(src, rotation=90)
+    with pytest.raises(ValueError, match="array must have shape"):
+        rotate(src, degrees=90)
 
 
 def test_flip_rejects_invalid_src_ndim() -> None:
     src = np.zeros((2, 3, 4, 5), dtype=np.uint8)
-    with pytest.raises(ValueError, match="src must have shape"):
+    with pytest.raises(ValueError, match="array must have shape"):
         flip(src, direction="horizontal")
 
 
 def test_rotate_0_returns_same() -> None:
     src = np.arange(6, dtype=np.uint8).reshape(2, 3)
-    out = rotate(src, rotation=0)
+    out = rotate(src, degrees=0)
     assert np.array_equal(out, src)
 
 
 def test_rotate_180_reverses_content() -> None:
     src = np.arange(4, dtype=np.uint8).reshape(2, 2)
-    out = rotate(src, rotation=180)
+    out = rotate(src, degrees=180)
     assert out[0, 0] == src[1, 1]
     assert out[1, 1] == src[0, 0]
 
 
 def test_rotate_270_shape() -> None:
     src = np.arange(6, dtype=np.uint8).reshape(2, 3)
-    out = rotate(src, rotation=270)
+    out = rotate(src, degrees=270)
     assert out.shape == (3, 2)
 
 
