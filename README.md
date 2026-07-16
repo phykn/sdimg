@@ -22,9 +22,15 @@ Public imports are flat within each domain:
 
 ```python
 from sdimg.image import apply_gaussian_blur, equalize_histogram
-from sdimg.mask import apply_morphology, extract_roi
+from sdimg.mask import apply_morphology
 from sdimg.segment import refine_grabcut
 ```
+
+The implementation keeps representation-specific responsibilities inside their
+domains: image processing owns visual/alpha channel handling, spatial operations
+own dtype restoration, and segmentation owns its bbox and ROI lifecycle. Import
+public functions from the flat domain packages rather than implementation
+modules.
 
 ## Core Contracts
 
@@ -38,6 +44,8 @@ from sdimg.segment import refine_grabcut
   Mask processing returns binary `np.uint8` in `{0, 1}`; distance transforms
   return `np.float32`.
 - `sdimg.spatial` operations preserve input dtype and channel shape.
+- `refine_grabcut` accepts an image-sized binary mask and returns a binary mask
+  with the same spatial shape. It derives and restores its ROI internally.
 - Points use `(x, y)`. Bounding boxes use
   `(xmin, ymin, xmax, ymax)`, minimum-inclusive and maximum-exclusive.
 - Empty mask geometry returns `None` where no geometry exists.
@@ -70,10 +78,7 @@ image = equalize_histogram(image)
 image = apply_gaussian_blur(image, kernel_size=(5, 5), sigma_x=1.2)
 mask = apply_morphology(mask, operation="open", kernel_size=(3, 3))
 
-roi_result = extract_roi(mask)
-if roi_result is not None:
-    roi_mask, bbox = roi_result
-    refined = refine_grabcut(image, roi_mask, bbox)
+refined = refine_grabcut(image, mask)
 ```
 
 ## Supporting Image Utilities

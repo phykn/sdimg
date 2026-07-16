@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from ..core.validation import validate_positive_int, validate_source
+from .dtype import restore_dtype
 
 _CV2_DTYPES = {
     np.dtype(np.uint8),
@@ -73,16 +74,7 @@ def _resize(
         raise RuntimeError(f"{function_name} failed: {exc}") from exc
     if array.ndim == 3 and array.shape[2] == 1 and result.ndim == 2:
         result = result[..., np.newaxis]
-    return np.ascontiguousarray(_restore_dtype(result, original_dtype))
-
-
-def _restore_dtype(array: np.ndarray, dtype: np.dtype) -> np.ndarray:
-    if dtype == np.bool_:
-        return array >= 0.5
-    if np.issubdtype(dtype, np.integer):
-        limits = np.iinfo(dtype)
-        return np.rint(np.clip(array, limits.min, limits.max)).astype(dtype)
-    return array.astype(dtype, copy=False)
+    return np.ascontiguousarray(restore_dtype(result, original_dtype))
 
 
 def _validate_optional_size(value: object, name: str) -> int | None:

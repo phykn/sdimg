@@ -15,8 +15,11 @@ def test_refine_grabcut_passes_actual_rgb_pixels(
     image[..., 0] = 17
     image[..., 1] = 43
     image[..., 2] = 91
-    roi = np.zeros((4, 5), dtype=np.uint8)
-    roi[1:3, 1:4] = 1
+    mask = np.zeros((6, 7), dtype=np.uint8)
+    mask[1, 1] = 1
+    mask[2:4, 2:5] = 1
+    mask[4, 5] = 1
+    roi = mask[1:5, 1:6]
     seen: dict[str, np.ndarray] = {}
 
     def fake_grabcut(
@@ -30,45 +33,65 @@ def test_refine_grabcut_passes_actual_rgb_pixels(
         mode: int,
     ) -> None:
         seen["img"] = img.copy()
+        mask[:] = cv2.GC_BGD
         mask[roi == 1] = cv2.GC_FGD
 
     monkeypatch.setattr(module.cv2, "grabCut", fake_grabcut)
-    out = refine_grabcut(image, roi, (1, 1, 6, 5), iterations=1, margin=0)
+    out = refine_grabcut(image, mask, iterations=1, margin=0)
     assert np.array_equal(seen["img"], image[1:5, 1:6])
-    assert np.array_equal(out, roi)
+    assert np.array_equal(out, mask)
 
 
-def test_refine_grabcut_empty_roi_returns_binary_copy() -> None:
+def test_refine_grabcut_restores_edge_roi_to_full_mask(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = importlib.import_module("sdimg.segment.grabcut")
+    image = np.zeros((6, 7, 3), dtype=np.uint8)
+    mask = np.zeros((6, 7), dtype=np.uint8)
+    mask[0, 0] = 1
+    mask[0:2, 1:3] = 1
+    roi = mask[0:2, 0:3]
+
+    def fake_grabcut(*, mask: np.ndarray, **kwargs: object) -> None:
+        mask[:] = cv2.GC_BGD
+        inner = mask[1:-1, 1:-1]
+        inner[roi == 1] = cv2.GC_FGD
+
+    monkeypatch.setattr(module.cv2, "grabCut", fake_grabcut)
+    out = refine_grabcut(image, mask, iterations=1, margin=1, area_tolerance=0.0)
+    assert out.shape == image.shape[:2]
+    assert np.array_equal(out, mask)
+
+
+def test_refine_grabcut_empty_mask_returns_binary_copy() -> None:
     image = np.zeros((4, 5, 3), dtype=np.uint8)
-    roi = np.zeros((2, 3), dtype=np.uint8)
-    out = refine_grabcut(image, roi, (1, 1, 4, 3), margin=0)
+    mask = np.zeros((4, 5), dtype=np.uint8)
+    out = refine_grabcut(image, mask, margin=0)
     assert out.dtype == np.uint8
-    assert np.array_equal(out, roi)
-    assert not np.shares_memory(out, roi)
+    assert np.array_equal(out, mask)
+    assert not np.shares_memory(out, mask)
 
 
 def test_refine_grabcut_full_foreground_without_margin_returns_original() -> None:
     image = np.zeros((4, 5, 3), dtype=np.uint8)
-    roi = np.ones((4, 5), dtype=np.uint8)
-    out = refine_grabcut(image, roi, (0, 0, 5, 4), margin=0)
-    assert np.array_equal(out, roi)
+    mask = np.ones((4, 5), dtype=np.uint8)
+    out = refine_grabcut(image, mask, margin=0)
+    assert np.array_equal(out, mask)
 
 
-def test_refine_grabcut_rejects_bbox_roi_mismatch() -> None:
-    with pytest.raises(ValueError, match="roi_mask"):
+def test_refine_grabcut_rejects_image_mask_shape_mismatch() -> None:
+    with pytest.raises(ValueError, match="mask shape"):
         refine_grabcut(
             np.zeros((5, 5, 3), dtype=np.uint8),
             np.ones((3, 3), dtype=np.uint8),
-            (0, 0, 2, 2),
         )
 
 
-def test_refine_grabcut_rejects_non_binary_roi() -> None:
+def test_refine_grabcut_rejects_non_binary_mask() -> None:
     with pytest.raises(ValueError, match="binary values"):
         refine_grabcut(
             np.zeros((5, 5, 3), dtype=np.uint8),
-            np.full((3, 3), 2, dtype=np.uint8),
-            (0, 0, 3, 3),
+            np.full((5, 5), 2, dtype=np.uint8),
         )
 
 
@@ -76,8 +99,9 @@ def test_refine_grabcut_area_tolerance_returns_original(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = importlib.import_module("sdimg.segment.grabcut")
-    roi = np.zeros((5, 5), dtype=np.uint8)
-    roi[1:4, 1:4] = 1
+    mask = np.zeros((5, 5), dtype=np.uint8)
+    mask[1:4, 1:4] = 1
+    mask[1, 1] = 0
 
     def erase_foreground(*, mask: np.ndarray, **kwargs: object) -> None:
         mask[:] = cv2.GC_BGD
@@ -85,21 +109,20 @@ def test_refine_grabcut_area_tolerance_returns_original(
     monkeypatch.setattr(module.cv2, "grabCut", erase_foreground)
     out = refine_grabcut(
         np.zeros((5, 5, 3), dtype=np.uint8),
-        roi,
-        (0, 0, 5, 5),
+        mask,
         margin=0,
         area_tolerance=0.0,
     )
-    assert np.array_equal(out, roi)
+    assert np.array_equal(out, mask)
 
 
-def test_refine_grabcut_returns_binary_roi_shape() -> None:
+def test_refine_grabcut_returns_binary_image_shape() -> None:
     image = np.random.default_rng(0).integers(0, 256, (20, 20, 3), dtype=np.uint8)
-    roi = np.zeros((10, 10), dtype=np.uint8)
-    roi[3:7, 3:7] = 1
-    out = refine_grabcut(image, roi, (5, 5, 15, 15), iterations=1)
+    mask = np.zeros((20, 20), dtype=np.uint8)
+    mask[8:12, 8:12] = 1
+    out = refine_grabcut(image, mask, iterations=1)
     assert out.dtype == np.uint8
-    assert out.shape == roi.shape
+    assert out.shape == mask.shape
     assert set(np.unique(out).tolist()) <= {0, 1}
 
 
@@ -117,8 +140,7 @@ def test_refine_grabcut_rejects_invalid_parameters(kwargs: dict[str, object]) ->
     with pytest.raises((TypeError, ValueError)):
         refine_grabcut(
             np.zeros((5, 5, 3), dtype=np.uint8),
-            np.ones((3, 3), dtype=np.uint8),
-            (0, 0, 3, 3),
+            np.ones((5, 5), dtype=np.uint8),
             **kwargs,
         )
 
@@ -132,12 +154,12 @@ def test_refine_grabcut_wraps_opencv_failure(
         raise RuntimeError("boom")
 
     monkeypatch.setattr(module.cv2, "grabCut", fail)
-    roi = np.zeros((3, 3), dtype=np.uint8)
-    roi[1, 1] = 1
+    mask = np.zeros((5, 5), dtype=np.uint8)
+    mask[1, 1] = 1
+    mask[3, 3] = 1
     with pytest.raises(RuntimeError, match="refine_grabcut failed"):
         refine_grabcut(
             np.zeros((5, 5, 3), dtype=np.uint8),
-            roi,
-            (0, 0, 3, 3),
+            mask,
             margin=0,
         )

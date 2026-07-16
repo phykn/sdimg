@@ -9,6 +9,7 @@ from ..core.validation import (
     validate_positive_int,
     validate_source,
 )
+from .dtype import restore_dtype
 
 
 def split_tiles(
@@ -75,7 +76,7 @@ def merge_tiles(
         accumulator /= coverage[..., None]
     else:
         accumulator /= coverage
-    return np.ascontiguousarray(_restore_dtype(accumulator, dtype))
+    return np.ascontiguousarray(restore_dtype(accumulator, dtype))
 
 
 def _parse_grid(grid: object) -> tuple[int, int]:
@@ -149,12 +150,3 @@ def _validate_metadata(metadata: object) -> tuple[tuple[int, ...], list[BBox]]:
     if not isinstance(boxes, list):
         raise ValueError("metadata['boxes'] must be a list.")
     return shape, boxes
-
-
-def _restore_dtype(array: np.ndarray, dtype: np.dtype) -> np.ndarray:
-    if dtype == np.bool_:
-        return array >= 0.5
-    if np.issubdtype(dtype, np.integer):
-        limits = np.iinfo(dtype)
-        return np.rint(np.clip(array, limits.min, limits.max)).astype(dtype)
-    return array.astype(dtype, copy=False)

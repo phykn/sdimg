@@ -2,11 +2,8 @@ import cv2
 import numpy as np
 
 from ..core.validation import validate_finite, validate_image, validate_positive_int
-from .conversion import (
-    _restore_visual_alpha,
-    _split_visual_alpha,
-    convert_to_uint8,
-)
+from .channels import prepare_visual_alpha, restore_visual_alpha
+from .conversion import convert_to_uint8
 
 
 def adjust_brightness_contrast(
@@ -17,22 +14,28 @@ def adjust_brightness_contrast(
     image = validate_image(image)
     brightness = _validate_unit_range(brightness, "brightness")
     contrast = _validate_unit_range(contrast, "contrast")
-    visual, alpha, ndim, channels = _split_image(image, convert_visual=True)
+    visual, alpha, ndim, channels = prepare_visual_alpha(
+        image,
+        convert_visual=True,
+    )
 
     adjusted = (visual.astype(np.float32) - 127.5) * (1.0 + contrast)
     adjusted += 127.5 + brightness * 255.0
     result = convert_to_uint8(adjusted)
-    return _restore_visual_alpha(result, alpha, ndim, channels)
+    return restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def equalize_histogram(image: np.ndarray) -> np.ndarray:
     image = validate_image(image)
-    visual, alpha, ndim, channels = _split_image(image, convert_visual=True)
+    visual, alpha, ndim, channels = prepare_visual_alpha(
+        image,
+        convert_visual=True,
+    )
     try:
         result = _apply_luminance(visual, cv2.equalizeHist)
     except Exception as exc:
         raise RuntimeError(f"equalize_histogram failed: {exc}") from exc
-    return _restore_visual_alpha(result, alpha, ndim, channels)
+    return restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def apply_clahe(
@@ -45,20 +48,26 @@ def apply_clahe(
     if clip_limit <= 0:
         raise ValueError("clip_limit must be greater than 0.")
     grid = _validate_grid_size(tile_grid_size)
-    visual, alpha, ndim, channels = _split_image(image, convert_visual=True)
+    visual, alpha, ndim, channels = prepare_visual_alpha(
+        image,
+        convert_visual=True,
+    )
     try:
         clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=grid)
         result = _apply_luminance(visual, clahe.apply)
     except Exception as exc:
         raise RuntimeError(f"apply_clahe failed: {exc}") from exc
-    return _restore_visual_alpha(result, alpha, ndim, channels)
+    return restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def normalize_minmax(image: np.ndarray) -> np.ndarray:
     image = validate_image(image)
-    visual, alpha, ndim, channels = _split_image(image, convert_visual=False)
+    visual, alpha, ndim, channels = prepare_visual_alpha(
+        image,
+        convert_visual=False,
+    )
     result = _normalize_channels(visual, method="minmax", std_range=0.0)
-    return _restore_visual_alpha(result, alpha, ndim, channels)
+    return restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def normalize_zscore(image: np.ndarray, std_range: float = 3.0) -> np.ndarray:
@@ -66,23 +75,12 @@ def normalize_zscore(image: np.ndarray, std_range: float = 3.0) -> np.ndarray:
     std_range = validate_finite(std_range, "std_range")
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
-    visual, alpha, ndim, channels = _split_image(image, convert_visual=False)
+    visual, alpha, ndim, channels = prepare_visual_alpha(
+        image,
+        convert_visual=False,
+    )
     result = _normalize_channels(visual, method="zscore", std_range=std_range)
-    return _restore_visual_alpha(result, alpha, ndim, channels)
-
-
-def _split_image(
-    image: np.ndarray,
-    *,
-    convert_visual: bool,
-) -> tuple[np.ndarray, np.ndarray | None, int, int | None]:
-    visual, alpha = _split_visual_alpha(image)
-    if convert_visual:
-        visual = convert_to_uint8(visual)
-    if alpha is not None:
-        alpha = convert_to_uint8(alpha)
-    channels = image.shape[2] if image.ndim == 3 else None
-    return visual, alpha, image.ndim, channels
+    return restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def _apply_luminance(image: np.ndarray, transform: object) -> np.ndarray:

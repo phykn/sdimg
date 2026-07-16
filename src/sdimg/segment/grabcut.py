@@ -1,19 +1,17 @@
 import cv2
 import numpy as np
 
-from ..core.types import BBox
 from ..core.validation import validate_finite, validate_image, validate_positive_int
 from ..image.conversion import convert_to_rgb
 from ..mask.conversion import convert_to_mask
 from ..mask.distance import compute_distance_transform
-from ..mask.geometry import count_foreground
+from ..mask.geometry import count_foreground, find_bbox
 from ..spatial.crop import crop
 
 
 def refine_grabcut(
     image: np.ndarray,
-    roi_mask: np.ndarray,
-    bbox: BBox,
+    mask: np.ndarray,
     iterations: int = 5,
     margin: int = 20,
     area_tolerance: float = 0.5,
@@ -28,17 +26,19 @@ def refine_grabcut(
         raise ValueError("area_tolerance must be greater than or equal to 0.")
 
     image = validate_image(image)
-    roi = convert_to_mask(roi_mask)
-    cropped = crop(image, bbox)
-    if cropped.shape[:2] != roi.shape:
+    original = convert_to_mask(mask).copy()
+    if image.shape[:2] != original.shape:
         raise ValueError(
-            f"cropped image shape {cropped.shape[:2]} does not match "
-            f"roi_mask shape {roi.shape}."
+            f"mask shape {original.shape} does not match image shape {image.shape[:2]}."
         )
-    rgb = convert_to_rgb(cropped)
-    original = roi.copy()
-    original_area = float(count_foreground(original))
-    if original_area == 0 or (margin == 0 and original_area == original.size):
+
+    bbox = find_bbox(original)
+    if bbox is None:
+        return original
+    roi = crop(original, bbox)
+    rgb = convert_to_rgb(crop(image, bbox))
+    original_area = float(count_foreground(roi))
+    if margin == 0 and original_area == roi.size:
         return original
 
     try:
@@ -82,7 +82,11 @@ def refine_grabcut(
     new_area = float(count_foreground(result))
     if abs(new_area - original_area) / original_area > area_tolerance:
         return original
-    return np.ascontiguousarray(result)
+
+    xmin, ymin, xmax, ymax = bbox
+    refined = np.zeros_like(original)
+    refined[ymin:ymax, xmin:xmax] = result
+    return np.ascontiguousarray(refined)
 
 
 def _initialize_labels(roi: np.ndarray) -> np.ndarray:
