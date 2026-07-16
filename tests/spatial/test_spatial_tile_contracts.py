@@ -1,3 +1,7 @@
+import itertools
+import math
+import warnings
+
 import numpy as np
 import pytest
 
@@ -25,6 +29,124 @@ def test_merge_tiles_is_order_independent() -> None:
     assert np.array_equal(forward, reverse)
 
 
+def test_split_merge_float64_max_does_not_overflow() -> None:
+    array = np.full((5, 5), np.finfo(np.float64).max)
+    tiles, metadata = split_tiles(
+        array,
+        grid=(2, 2),
+        overlap=0.5,
+        return_metadata=True,
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        out = merge_tiles(tiles, metadata)
+
+    assert np.array_equal(out, array)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("value", [np.inf, -np.inf, np.nan])
+def test_split_merge_preserves_nonfinite_float_values(
+    dtype: np.dtype,
+    value: float,
+) -> None:
+    array = np.full((2, 2), value, dtype=dtype)
+    tiles, metadata = split_tiles(array, grid=1, return_metadata=True)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        out = merge_tiles(tiles, metadata)
+
+    assert out.dtype == array.dtype
+    assert np.array_equal(out, array, equal_nan=True)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize(
+    "values,expected",
+    [
+        ([np.inf, 1.0], np.inf),
+        ([-np.inf, 1.0], -np.inf),
+        ([np.inf, -np.inf], np.nan),
+        ([np.nan, np.inf], np.nan),
+    ],
+)
+def test_merge_tiles_combines_nonfinite_values_without_warnings(
+    dtype: np.dtype,
+    values: list[float],
+    expected: float,
+) -> None:
+    tiles = [np.full((2, 2), value, dtype=dtype) for value in values]
+    metadata = {
+        "shape": (2, 2),
+        "boxes": [(0, 0, 2, 2)] * len(tiles),
+    }
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        out = merge_tiles(tiles, metadata)
+
+    assert out.dtype == dtype
+    if np.isnan(expected):
+        assert np.isnan(out).all()
+    else:
+        assert np.all(out == expected)
+
+
+def test_merge_tiles_averages_opposite_float64_extremes_without_overflow() -> None:
+    limit = np.finfo(np.float64).max
+    tiles = [np.full((2, 2), limit), np.full((2, 2), -limit)]
+    metadata = {"shape": (2, 2), "boxes": [(0, 0, 2, 2), (0, 0, 2, 2)]}
+
+    for ordered_tiles in (tiles, tiles[::-1]):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            out = merge_tiles(ordered_tiles, metadata)
+
+        assert np.array_equal(out, np.zeros((2, 2), dtype=np.float64))
+
+
+@pytest.mark.parametrize(
+    "values,dtype,expected",
+    [
+        ([100, 2**53 - 1, -(2**53)], np.int64, 33),
+        ([4, 18, 212, 216], np.uint8, 112),
+    ],
+)
+def test_merge_tiles_integer_average_is_exact_and_order_independent(
+    values: list[int],
+    dtype: np.dtype,
+    expected: int,
+) -> None:
+    metadata = {
+        "shape": (1, 1),
+        "boxes": [(0, 0, 1, 1)] * len(values),
+    }
+
+    for permutation in itertools.permutations(values):
+        tiles = [np.array([[value]], dtype=dtype) for value in permutation]
+        out = merge_tiles(tiles, metadata)
+
+        assert out.dtype == dtype
+        assert out.item() == expected
+
+
+def test_merge_tiles_float_average_is_order_independent() -> None:
+    values = [2**-53, 1.0, 2**-53, float(2**53)]
+    expected = math.fsum(values) / len(values)
+    metadata = {
+        "shape": (1, 1),
+        "boxes": [(0, 0, 1, 1)] * len(values),
+    }
+
+    for permutation in set(itertools.permutations(values)):
+        tiles = [np.array([[value]], dtype=np.float64) for value in permutation]
+        out = merge_tiles(tiles, metadata)
+
+        assert out.item() == expected
+
+
 @pytest.mark.parametrize(
     "array",
     [
@@ -43,6 +165,41 @@ def test_split_merge_roundtrip_preserves_dtype_and_values(array: np.ndarray) -> 
     out = merge_tiles(tiles, metadata)
     assert out.dtype == array.dtype
     assert np.array_equal(out, array)
+
+
+@pytest.mark.parametrize(
+    "array",
+    [
+        np.array([[-(2**53), 2**53]], dtype=np.int64),
+        np.array([[0, 2**53]], dtype=np.uint64),
+    ],
+)
+def test_split_merge_roundtrip_accepts_float64_exact_integer_boundary(
+    array: np.ndarray,
+) -> None:
+    tiles, metadata = split_tiles(array, grid=1, return_metadata=True)
+
+    out = merge_tiles(tiles, metadata)
+
+    assert out.dtype == array.dtype
+    assert np.array_equal(out, array)
+
+
+@pytest.mark.parametrize(
+    "array",
+    [
+        np.array([[-(2**53) - 1]], dtype=np.int64),
+        np.array([[2**53 + 1]], dtype=np.int64),
+        np.array([[2**53 + 1]], dtype=np.uint64),
+    ],
+)
+def test_merge_tiles_rejects_integers_outside_float64_exact_range(
+    array: np.ndarray,
+) -> None:
+    tiles, metadata = split_tiles(array, grid=1, return_metadata=True)
+
+    with pytest.raises(ValueError, match="float64-backed spatial operations"):
+        merge_tiles(tiles, metadata)
 
 
 def test_split_tiles_supports_asymmetric_grid_and_overlap() -> None:

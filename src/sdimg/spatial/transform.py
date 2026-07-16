@@ -19,6 +19,8 @@ def rotate(array: np.ndarray, degrees: Rotation = 0) -> np.ndarray:
 
 def flip(array: np.ndarray, direction: FlipDirection) -> np.ndarray:
     array = validate_source(array)
+    if not isinstance(direction, str):
+        raise TypeError("direction must be a str.")
     if direction == "horizontal":
         result = np.flip(array, axis=1)
     elif direction == "vertical":

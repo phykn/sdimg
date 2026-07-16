@@ -69,3 +69,11 @@ def test_flip_rejects_invalid_direction() -> None:
     src = np.zeros((2, 2), dtype=np.uint8)
     with pytest.raises(ValueError, match="direction must be one of"):
         flip(src, direction="diagonal")
+
+
+@pytest.mark.parametrize("direction", [None, 1, ["horizontal"]])
+def test_flip_rejects_non_string_direction_with_type_error(direction: object) -> None:
+    src = np.zeros((2, 2), dtype=np.uint8)
+
+    with pytest.raises(TypeError, match="direction must be a str"):
+        flip(src, direction=direction)  # type: ignore[arg-type]

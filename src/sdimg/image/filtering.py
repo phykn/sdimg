@@ -76,15 +76,20 @@ def denoise(
         image,
         convert_visual=True,
     )
+    if strength == 0 and color_strength == 0:
+        return restore_visual_alpha(visual, alpha, ndim, channels)
+
     try:
         if visual.ndim == 3:
-            result = cv2.fastNlMeansDenoisingColored(
-                visual,
+            bgr = cv2.cvtColor(visual, cv2.COLOR_RGB2BGR)
+            denoised = cv2.fastNlMeansDenoisingColored(
+                bgr,
                 h=strength,
                 hColor=color_strength,
                 templateWindowSize=template_size,
                 searchWindowSize=search_size,
             )
+            result = cv2.cvtColor(denoised, cv2.COLOR_BGR2RGB)
         else:
             result = cv2.fastNlMeansDenoising(
                 visual,

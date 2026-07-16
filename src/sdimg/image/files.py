@@ -7,6 +7,7 @@ from .pillow import prepare_pillow_array
 
 
 def read_image(path: str | Path) -> np.ndarray:
+    path = _validate_path(path)
     try:
         with Image.open(path) as image:
             array = np.array(image)
@@ -18,11 +19,18 @@ def read_image(path: str | Path) -> np.ndarray:
 
 
 def write_image(path: str | Path, image: np.ndarray, **kwargs: object) -> None:
+    path = _validate_path(path)
     pillow_array, _ = prepare_pillow_array(image)
     try:
         Image.fromarray(pillow_array).convert("RGB").save(path, **kwargs)
     except Exception as exc:
         raise RuntimeError(f"write_image failed: {exc}") from exc
+
+
+def _validate_path(path: object) -> str | Path:
+    if not isinstance(path, (str, Path)):
+        raise TypeError("path must be a str or pathlib.Path.")
+    return path
 
 
 def _scale_to_uint8(array: np.ndarray) -> np.ndarray:

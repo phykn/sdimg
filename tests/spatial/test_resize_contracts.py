@@ -1,7 +1,36 @@
+import cv2
 import numpy as np
 import pytest
 
 from sdimg.spatial import resize, resize_to_long_side
+
+
+@pytest.mark.parametrize(
+    "dtype,value",
+    [
+        (np.int64, -(2**53) - 1),
+        (np.int64, 2**53 + 1),
+        (np.uint64, 2**53 + 1),
+    ],
+)
+def test_resize_rejects_integers_outside_float64_exact_range(
+    dtype: np.dtype,
+    value: int,
+) -> None:
+    src = np.full((2, 2), value, dtype=dtype)
+
+    with pytest.raises(ValueError, match="float64-backed spatial operations"):
+        resize(src, height=2, width=2, interpolation=cv2.INTER_NEAREST)
+
+
+@pytest.mark.parametrize("dtype", [np.int64, np.uint64])
+def test_resize_accepts_float64_exact_integer_boundary(dtype: np.dtype) -> None:
+    src = np.array([[0, 2**53]], dtype=dtype)
+
+    out = resize(src, height=2, width=4, interpolation=cv2.INTER_NEAREST)
+
+    assert out.dtype == src.dtype
+    assert np.array_equal(out[:, ::2], np.repeat(src, 2, axis=0))
 
 
 def test_resize_with_only_width_preserves_aspect_ratio() -> None:

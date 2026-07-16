@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from ..core.validation import validate_positive_int, validate_source
-from .dtype import restore_dtype
+from .dtype import restore_dtype, validate_float64_integer_range
 
 _CV2_DTYPES = {
     np.dtype(np.uint8),
@@ -67,7 +67,11 @@ def _resize(
     if not isinstance(interpolation, int) or isinstance(interpolation, bool):
         raise TypeError("interpolation must be an int.")
     original_dtype = array.dtype
-    working = array if original_dtype in _CV2_DTYPES else array.astype(np.float64)
+    if original_dtype in _CV2_DTYPES:
+        working = array
+    else:
+        validate_float64_integer_range(array, function_name)
+        working = array.astype(np.float64)
     try:
         result = cv2.resize(working, destination, interpolation=interpolation)
     except Exception as exc:

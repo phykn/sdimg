@@ -35,32 +35,14 @@ def refine_grabcut(
     bbox = find_bbox(original)
     if bbox is None:
         return original
-    roi = crop(original, bbox)
-    rgb = convert_to_rgb(crop(image, bbox))
-    original_area = float(count_foreground(roi))
-    if margin == 0 and original_area == roi.size:
+    expanded_bbox = _expand_bbox(bbox, margin, original.shape)
+    roi = crop(original, expanded_bbox)
+    rgb = convert_to_rgb(crop(image, expanded_bbox))
+    original_area = float(count_foreground(original))
+    if original_area == roi.size:
         return original
 
     try:
-        if margin > 0:
-            rgb = cv2.copyMakeBorder(
-                rgb,
-                margin,
-                margin,
-                margin,
-                margin,
-                cv2.BORDER_REFLECT,
-            )
-            roi = cv2.copyMakeBorder(
-                roi,
-                margin,
-                margin,
-                margin,
-                margin,
-                cv2.BORDER_CONSTANT,
-                value=0,
-            )
-
         labels = _initialize_labels(roi)
         background_model = np.zeros((1, 65), dtype=np.float64)
         foreground_model = np.zeros((1, 65), dtype=np.float64)
@@ -77,16 +59,29 @@ def refine_grabcut(
         raise RuntimeError(f"refine_grabcut failed: {exc}") from exc
 
     result = np.isin(labels, (cv2.GC_FGD, cv2.GC_PR_FGD)).astype(np.uint8)
-    if margin > 0:
-        result = result[margin:-margin, margin:-margin]
     new_area = float(count_foreground(result))
     if abs(new_area - original_area) / original_area > area_tolerance:
         return original
 
-    xmin, ymin, xmax, ymax = bbox
+    xmin, ymin, xmax, ymax = expanded_bbox
     refined = np.zeros_like(original)
     refined[ymin:ymax, xmin:xmax] = result
     return np.ascontiguousarray(refined)
+
+
+def _expand_bbox(
+    bbox: tuple[int, int, int, int],
+    margin: int,
+    shape: tuple[int, int],
+) -> tuple[int, int, int, int]:
+    xmin, ymin, xmax, ymax = bbox
+    height, width = shape
+    return (
+        max(0, xmin - margin),
+        max(0, ymin - margin),
+        min(width, xmax + margin),
+        min(height, ymax + margin),
+    )
 
 
 def _initialize_labels(roi: np.ndarray) -> np.ndarray:

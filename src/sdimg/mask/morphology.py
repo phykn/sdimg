@@ -20,7 +20,7 @@ def apply_morphology(
         raise ValueError(
             "operation must be one of: 'open', 'close', 'erode', 'dilate'."
         )
-    kernel = np.ones(_validate_kernel_size(kernel_size), dtype=np.uint8)
+    kernel = _make_kernel(kernel_size)
     iterations = validate_positive_int(iterations, "iterations")
     if not np.any(binary):
         return binary
@@ -48,8 +48,6 @@ def apply_morphology(
                 code,
                 kernel,
                 iterations=iterations,
-                borderType=cv2.BORDER_CONSTANT,
-                borderValue=0,
             )
     except Exception as exc:
         raise RuntimeError(f"apply_morphology failed: {exc}") from exc
@@ -61,7 +59,7 @@ def extract_boundary(
     kernel_size: tuple[int, int] = (3, 3),
 ) -> np.ndarray:
     binary = convert_to_mask(mask)
-    kernel = np.ones(_validate_kernel_size(kernel_size), dtype=np.uint8)
+    kernel = _make_kernel(kernel_size)
     if not np.any(binary):
         return binary
     try:
@@ -102,3 +100,8 @@ def _validate_kernel_size(value: object) -> tuple[int, int]:
         validate_positive_int(value[0], "kernel_size[0]"),
         validate_positive_int(value[1], "kernel_size[1]"),
     )
+
+
+def _make_kernel(kernel_size: object) -> np.ndarray:
+    width, height = _validate_kernel_size(kernel_size)
+    return np.ones((height, width), dtype=np.uint8)

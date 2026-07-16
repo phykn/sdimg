@@ -44,6 +44,21 @@ def test_morphology_close_fills_small_gap() -> None:
     assert out[4, 4] == 1
 
 
+def test_morphology_close_preserves_foreground_at_image_border() -> None:
+    src = np.ones((5, 7), dtype=np.uint8)
+    out = apply_morphology(src, operation="close", kernel_size=(3, 3))
+    assert np.array_equal(out, src)
+
+
+def test_morphology_kernel_size_is_width_first() -> None:
+    src = np.zeros((7, 7), dtype=np.uint8)
+    src[3, 3] = 1
+    out = apply_morphology(src, operation="dilate", kernel_size=(3, 1))
+    expected = np.zeros_like(src)
+    expected[3, 2:5] = 1
+    assert np.array_equal(out, expected)
+
+
 def test_morphology_empty_mask_returns_empty() -> None:
     src = np.zeros((5, 5), dtype=np.uint8)
     for op in ("erode", "dilate", "open", "close"):

@@ -21,9 +21,10 @@ def make_array_id(
     if array.dtype.hasobject:
         raise ValueError("array must not have object dtype.")
 
+    shape = array.shape
     contiguous = np.ascontiguousarray(array)
     digest = hashlib.md5()
     digest.update(contiguous.dtype.str.encode("ascii"))
-    digest.update(np.asarray(contiguous.shape, dtype=np.int64).tobytes())
+    digest.update(np.asarray(shape, dtype=np.int64).tobytes())
     digest.update(memoryview(contiguous))
     return prefix + digest.hexdigest()[:length]

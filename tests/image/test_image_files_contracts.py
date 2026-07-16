@@ -7,6 +7,20 @@ from PIL import Image
 from sdimg.image import read_image, write_image
 
 
+@pytest.mark.parametrize("path", [123, b"image.png", None])
+def test_read_image_rejects_invalid_path_type(path: object) -> None:
+    with pytest.raises(TypeError, match="path must be a str or pathlib.Path"):
+        read_image(path)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("path", [123, b"image.png", None])
+def test_write_image_rejects_invalid_path_type(path: object) -> None:
+    image = np.zeros((2, 2, 3), dtype=np.uint8)
+
+    with pytest.raises(TypeError, match="path must be a str or pathlib.Path"):
+        write_image(path, image)  # type: ignore[arg-type]
+
+
 def test_read_write_image_round_trips_rgb(tmp_path: Path) -> None:
     path = tmp_path / "rgb.png"
     image = np.zeros((10, 10, 3), dtype=np.uint8)

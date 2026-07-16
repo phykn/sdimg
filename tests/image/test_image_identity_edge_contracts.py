@@ -11,6 +11,18 @@ def test_make_array_id_uses_dtype_shape_and_content() -> None:
     assert make_array_id(array) != make_array_id(array.reshape(2, 6))
 
 
+def test_make_array_id_distinguishes_zero_one_and_two_dimensional_shapes() -> None:
+    arrays = [
+        np.array(1, dtype=np.uint8),
+        np.array([1], dtype=np.uint8),
+        np.array([[1]], dtype=np.uint8),
+    ]
+
+    identifiers = {make_array_id(array, length=32) for array in arrays}
+
+    assert len(identifiers) == len(arrays)
+
+
 def test_make_array_id_supports_prefix_length_and_non_contiguous_array() -> None:
     array = np.arange(16, dtype=np.uint8).reshape(4, 4)[::2]
     value = make_array_id(array, prefix="img_", length=16)

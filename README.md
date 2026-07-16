@@ -39,13 +39,19 @@ modules.
 - Color images are RGB. Convert OpenCV BGR inputs before calling `sdimg`.
 - Channel meanings are grayscale, grayscale+alpha, RGB, and RGBA.
 - `sdimg.image` processing returns `np.uint8`. Filters and enhancement preserve
-  channel shape and leave alpha content unchanged.
+  channel shape and leave alpha content unchanged. Color denoising follows the
+  RGB contract; setting both denoising strengths to zero is an exact converted
+  no-op.
 - Masks use non-empty shape `(H, W)` and values `bool`, `{0, 1}`, or `{0, 255}`.
   Mask processing returns binary `np.uint8` in `{0, 1}`; distance transforms
-  return `np.float32`.
-- `sdimg.spatial` operations preserve input dtype and channel shape.
+  return `np.float32`. Two-dimensional morphology kernel sizes use
+  `(width, height)` order.
+- `sdimg.spatial` operations preserve input dtype and channel shape. `resize`
+  and tile merging reject integer values outside the safe range
+  `[-2**53, 2**53]` instead of silently changing them.
 - `refine_grabcut` accepts an image-sized binary mask and returns a binary mask
-  with the same spatial shape. It derives and restores its ROI internally.
+  with the same spatial shape. Its `margin` expands the initial bounding box
+  over real source pixels, so refinement may add foreground outside that box.
 - Points use `(x, y)`. Bounding boxes use
   `(xmin, ymin, xmax, ymax)`, minimum-inclusive and maximum-exclusive.
 - Empty mask geometry returns `None` where no geometry exists.
@@ -62,7 +68,7 @@ modules.
 import numpy as np
 
 from sdimg.image import apply_gaussian_blur, equalize_histogram
-from sdimg.mask import apply_morphology, extract_roi
+from sdimg.mask import apply_morphology
 from sdimg.segment import refine_grabcut
 
 image = np.random.default_rng(0).integers(
@@ -102,5 +108,6 @@ write_image(f"{image_id}.png", restored)
 
 `read_image` returns RGB `uint8`. High-bit-depth and floating images are scaled
 explicitly before RGB conversion. `write_image` writes RGB and ignores alpha.
+`make_array_id` includes the array dtype, original shape, and content.
 The lossless WebP string codec preserves RGBA alpha and ignores
 grayscale+alpha's alpha channel.

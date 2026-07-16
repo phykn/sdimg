@@ -50,17 +50,64 @@ def test_refine_grabcut_restores_edge_roi_to_full_mask(
     mask = np.zeros((6, 7), dtype=np.uint8)
     mask[0, 0] = 1
     mask[0:2, 1:3] = 1
-    roi = mask[0:2, 0:3]
+    roi = mask[0:3, 0:4]
+    seen: dict[str, np.ndarray] = {}
 
-    def fake_grabcut(*, mask: np.ndarray, **kwargs: object) -> None:
+    def fake_grabcut(
+        *, img: np.ndarray, mask: np.ndarray, **kwargs: object
+    ) -> None:
+        seen["img"] = img.copy()
         mask[:] = cv2.GC_BGD
-        inner = mask[1:-1, 1:-1]
-        inner[roi == 1] = cv2.GC_FGD
+        mask[roi == 1] = cv2.GC_FGD
 
     monkeypatch.setattr(module.cv2, "grabCut", fake_grabcut)
     out = refine_grabcut(image, mask, iterations=1, margin=1, area_tolerance=0.0)
     assert out.shape == image.shape[:2]
+    assert np.array_equal(seen["img"], image[0:3, 0:4])
     assert np.array_equal(out, mask)
+
+
+def test_refine_grabcut_can_expand_beyond_initial_bbox(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = importlib.import_module("sdimg.segment.grabcut")
+    image = np.arange(8 * 9 * 3, dtype=np.uint8).reshape(8, 9, 3)
+    mask = np.zeros((8, 9), dtype=np.uint8)
+    mask[3:5, 4:6] = 1
+    seen: dict[str, np.ndarray] = {}
+
+    def fake_grabcut(
+        *, img: np.ndarray, mask: np.ndarray, **kwargs: object
+    ) -> None:
+        seen["img"] = img.copy()
+        mask[:] = cv2.GC_BGD
+        mask[1:3, 1:3] = cv2.GC_FGD
+        mask[1, 3] = cv2.GC_FGD
+
+    monkeypatch.setattr(module.cv2, "grabCut", fake_grabcut)
+    out = refine_grabcut(image, mask, iterations=1, margin=1, area_tolerance=0.25)
+    assert np.array_equal(seen["img"], image[2:6, 3:7])
+    assert out[3, 6] == 1
+    assert np.count_nonzero(out) == 5
+
+
+def test_refine_grabcut_can_expand_at_image_edge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = importlib.import_module("sdimg.segment.grabcut")
+    image = np.zeros((5, 6, 3), dtype=np.uint8)
+    mask = np.zeros((5, 6), dtype=np.uint8)
+    mask[0:2, 0:2] = 1
+
+    def fake_grabcut(*, mask: np.ndarray, **kwargs: object) -> None:
+        mask[:] = cv2.GC_BGD
+        mask[0:2, 0:2] = cv2.GC_FGD
+        mask[2, 2] = cv2.GC_FGD
+
+    monkeypatch.setattr(module.cv2, "grabCut", fake_grabcut)
+    out = refine_grabcut(image, mask, iterations=1, margin=1, area_tolerance=0.25)
+    assert out[2, 2] == 1
+    assert np.count_nonzero(out) == 5
 
 
 def test_refine_grabcut_empty_mask_returns_binary_copy() -> None:

@@ -48,6 +48,14 @@ def test_extract_boundary_supports_large_kernel() -> None:
     assert out[0, 0] == 1
 
 
+def test_extract_boundary_kernel_size_is_width_first() -> None:
+    mask = np.ones((5, 7), dtype=np.uint8)
+    out = extract_boundary(mask, kernel_size=(3, 1))
+    expected = np.zeros_like(mask)
+    expected[:, [0, -1]] = 1
+    assert np.array_equal(out, expected)
+
+
 def test_keep_largest_component_keeps_only_largest() -> None:
     mask = np.zeros((8, 8), dtype=np.uint8)
     mask[1, 1] = 1
@@ -61,6 +69,17 @@ def test_keep_largest_component_keeps_only_largest() -> None:
 def test_keep_largest_component_rejects_invalid_connectivity(connectivity: int) -> None:
     with pytest.raises(ValueError):
         keep_largest_component(np.zeros((3, 3), dtype=np.uint8), connectivity)
+
+
+@pytest.mark.parametrize("connectivity", [True, 4.0, [4], np.int64(4)])
+def test_keep_largest_component_rejects_non_builtin_int_connectivity(
+    connectivity: object,
+) -> None:
+    with pytest.raises(TypeError, match="connectivity must be an int"):
+        keep_largest_component(
+            np.zeros((3, 3), dtype=np.uint8),
+            connectivity,  # type: ignore[arg-type]
+        )
 
 
 @pytest.mark.parametrize(
