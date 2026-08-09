@@ -1,5 +1,8 @@
+import cv2
 import numpy as np
 import pytest
+
+import sdimg.mask.geometry as geometry
 
 from sdimg.mask import (
     count_foreground,
@@ -74,3 +77,57 @@ def test_measure_bbox_area_validates_type_and_order() -> None:
         measure_bbox_area((0.0, 0, 2, 2))  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         measure_bbox_area((2, 0, 1, 2))
+
+
+def test_geometry_handles_noncontiguous_0255_mask() -> None:
+    source = np.zeros((10, 14), dtype=np.uint8)
+    mask = source[::2, ::2]
+    mask[1:4, 2:6] = 255
+    assert not mask.flags.c_contiguous
+
+    assert find_bbox(mask) == (2, 1, 6, 4)
+    assert find_centroid(mask) == (3.5, 2.0)
+    result = extract_roi(mask)
+    assert result is not None
+    roi, bbox = result
+    assert bbox == (2, 1, 6, 4)
+    assert np.array_equal(roi, np.ones((3, 4), dtype=np.uint8))
+    assert not np.shares_memory(roi, mask)
+
+
+def test_dense_geometry_uses_full_mask_extent() -> None:
+    mask = np.ones((256, 320), dtype=np.uint8)
+
+    assert find_bbox(mask) == (0, 0, 320, 256)
+    assert find_centroid(mask) == (159.5, 127.5)
+
+
+def test_extract_roi_converts_mask_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = 0
+    original = geometry.convert_to_mask
+
+    def count_calls(mask: object) -> np.ndarray:
+        nonlocal calls
+        calls += 1
+        return original(mask)
+
+    monkeypatch.setattr(geometry, "convert_to_mask", count_calls)
+
+    result = extract_roi(_asymmetric_mask())
+
+    assert result is not None
+    assert calls == 1
+
+
+def test_geometry_wraps_opencv_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(*args: object, **kwargs: object) -> object:
+        raise cv2.error("forced failure")
+
+    mask = _asymmetric_mask()
+    monkeypatch.setattr(cv2, "boundingRect", fail)
+    with pytest.raises(RuntimeError, match="find_bbox failed: forced failure"):
+        find_bbox(mask)
+
+    monkeypatch.setattr(cv2, "moments", fail)
+    with pytest.raises(RuntimeError, match="find_centroid failed: forced failure"):
+        find_centroid(mask)

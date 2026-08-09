@@ -124,3 +124,14 @@ def test_mask_processing_empty_outputs_keep_contracts() -> None:
     distance = compute_distance_transform(mask)
     assert distance.dtype == np.float32
     assert np.count_nonzero(distance) == 0
+
+
+@pytest.mark.parametrize("distance_type", [7, None, ["l2"]])
+def test_distance_transform_rejects_non_string_distance_type(
+    distance_type: object,
+) -> None:
+    with pytest.raises(TypeError, match="distance_type must be a str"):
+        compute_distance_transform(
+            np.zeros((5, 5), dtype=np.uint8),
+            distance_type=distance_type,  # type: ignore[arg-type]
+        )

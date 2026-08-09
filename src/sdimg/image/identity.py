@@ -24,7 +24,35 @@ def make_array_id(
     shape = array.shape
     contiguous = np.ascontiguousarray(array)
     digest = hashlib.md5()
-    digest.update(contiguous.dtype.str.encode("ascii"))
+    digest.update(_encode_dtype(contiguous.dtype))
     digest.update(np.asarray(shape, dtype=np.int64).tobytes())
     digest.update(memoryview(contiguous))
     return prefix + digest.hexdigest()[:length]
+
+
+def _encode_dtype(dtype: np.dtype) -> bytes:
+    if dtype.fields is None:
+        return dtype.str.encode("ascii")
+    return ("structured:" + repr(_dtype_signature(dtype))).encode("utf-8")
+
+
+def _dtype_signature(dtype: np.dtype) -> tuple[object, ...] | str:
+    if dtype.subdtype is not None:
+        base, shape = dtype.subdtype
+        return ("subarray", _dtype_signature(base), tuple(shape))
+    if dtype.fields is None:
+        return dtype.str
+
+    fields: list[tuple[object, ...]] = []
+    for name in dtype.names or ():
+        field = dtype.fields[name]
+        field_dtype, offset = field[:2]
+        title = field[2] if len(field) == 3 else None
+        fields.append((name, int(offset), title, _dtype_signature(field_dtype)))
+    return (
+        "structured",
+        dtype.itemsize,
+        dtype.alignment,
+        dtype.isalignedstruct,
+        tuple(fields),
+    )

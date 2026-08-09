@@ -25,6 +25,18 @@ def test_convert_to_mask_accepts_binary_representations(
     assert out.tolist() == expected
 
 
+def test_convert_to_mask_canonical_uint8_returns_independent_contiguous_copy() -> None:
+    source = np.tile(np.array([0, 1], dtype=np.uint8), (8, 8))
+    mask = source[::2, :]
+    assert not mask.flags.c_contiguous
+
+    out = convert_to_mask(mask)
+
+    assert np.array_equal(out, mask)
+    assert out.flags.c_contiguous
+    assert not np.shares_memory(out, mask)
+
+
 def test_is_mask_returns_true_for_valid_masks() -> None:
     assert is_mask(np.array([[0, 1], [1, 0]], dtype=np.uint8)) is True
     assert is_mask(np.array([[True, False], [False, True]])) is True

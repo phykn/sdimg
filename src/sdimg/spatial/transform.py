@@ -14,7 +14,7 @@ def rotate(array: np.ndarray, degrees: Rotation = 0) -> np.ndarray:
         raise TypeError("degrees must be an int.")
     if degrees not in {0, 90, 180, 270}:
         raise ValueError("degrees must be one of 0, 90, 180, 270.")
-    return np.ascontiguousarray(np.rot90(array, k=degrees // 90)).copy()
+    return np.rot90(array, k=degrees // 90).copy(order="C")
 
 
 def flip(array: np.ndarray, direction: FlipDirection) -> np.ndarray:
@@ -29,4 +29,4 @@ def flip(array: np.ndarray, direction: FlipDirection) -> np.ndarray:
         result = np.swapaxes(array, 0, 1)
     else:
         raise ValueError("direction must be one of horizontal, vertical, transpose.")
-    return np.ascontiguousarray(result).copy()
+    return result.copy(order="C")

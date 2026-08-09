@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 from ..core.types import BBox
@@ -29,14 +30,19 @@ def find_bbox_from_points(points: np.ndarray) -> BBox | None:
 
 
 def find_bbox(mask: np.ndarray) -> BBox | None:
-    return find_bbox_from_points(find_foreground_points(mask))
+    return _find_bbox(convert_to_mask(mask), "find_bbox")
 
 
 def find_centroid(mask: np.ndarray) -> tuple[float, float] | None:
-    points = find_foreground_points(mask)
-    if points.shape[0] == 0:
+    binary = convert_to_mask(mask)
+    try:
+        moments = cv2.moments(binary, binaryImage=True)
+    except Exception as exc:
+        raise RuntimeError(f"find_centroid failed: {exc}") from exc
+    area = moments["m00"]
+    if area == 0.0:
         return None
-    return (float(points[:, 0].mean()), float(points[:, 1].mean()))
+    return (float(moments["m10"] / area), float(moments["m01"] / area))
 
 
 def count_foreground(mask: np.ndarray) -> int:
@@ -52,8 +58,18 @@ def measure_bbox_area(bbox: BBox | None) -> int:
 
 def extract_roi(mask: np.ndarray) -> tuple[np.ndarray, BBox] | None:
     binary = convert_to_mask(mask)
-    bbox = find_bbox(binary)
+    bbox = _find_bbox(binary, "extract_roi")
     if bbox is None:
         return None
     xmin, ymin, xmax, ymax = bbox
     return binary[ymin:ymax, xmin:xmax].copy(), bbox
+
+
+def _find_bbox(binary: np.ndarray, function_name: str) -> BBox | None:
+    try:
+        xmin, ymin, width, height = cv2.boundingRect(binary)
+    except Exception as exc:
+        raise RuntimeError(f"{function_name} failed: {exc}") from exc
+    if width == 0 or height == 0:
+        return None
+    return (xmin, ymin, xmin + width, ymin + height)

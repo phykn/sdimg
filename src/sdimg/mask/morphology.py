@@ -16,6 +16,8 @@ def apply_morphology(
     iterations: int = 1,
 ) -> np.ndarray:
     binary = convert_to_mask(mask)
+    if not isinstance(operation, str):
+        raise TypeError("operation must be a str.")
     if operation not in {"open", "close", "erode", "dilate"}:
         raise ValueError(
             "operation must be one of: 'open', 'close', 'erode', 'dilate'."

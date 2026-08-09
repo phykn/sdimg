@@ -9,14 +9,19 @@ Small, function-based image and mask processing library built on
 pip install sdimg
 ```
 
-## Modules
+## Architecture
 
-- `sdimg.image`: image conversion, filtering, enhancement, normalization,
-  deterministic array IDs, lossless string codecs, and file I/O.
-- `sdimg.mask`: binary conversion, geometry, connected components,
-  morphology, hulls, and distance transforms.
-- `sdimg.spatial`: crop, pad, resize, rotate, flip, and tile split/merge.
-- `sdimg.segment`: Otsu thresholding and GrabCut refinement.
+| Path | Responsibility |
+| --- | --- |
+| `sdimg.core` | Shared array, shape, parameter, and bbox contracts. It contains no image-processing algorithms. |
+| `sdimg.image` | Image representation conversion, filtering, enhancement, identity, codecs, and file I/O. Channel and Pillow adapters stay in this domain. |
+| `sdimg.mask` | Binary-mask conversion, measurement, morphology, connected components, hulls, and distance transforms. |
+| `sdimg.spatial` | Dtype-preserving crop, pad, resize, transform, and tiling operations. `tile.split` owns tile layout; `tile.merge` owns validated numerical reconstruction. |
+| `sdimg.segment` | Algorithms that orchestrate image, mask, and spatial operations: Otsu thresholding and GrabCut refinement. |
+
+The dependency direction is `core <- {image, mask, spatial} <- segment`.
+Representation-specific helpers stay with the domain that owns the
+representation; cross-domain workflows belong in `segment`.
 
 Public imports are flat within each domain:
 
@@ -26,15 +31,12 @@ from sdimg.mask import apply_morphology
 from sdimg.segment import refine_grabcut
 ```
 
-The implementation keeps representation-specific responsibilities inside their
-domains: image processing owns visual/alpha channel handling, spatial operations
-own dtype restoration, and segmentation owns its bbox and ROI lifecycle. Import
-public functions from the flat domain packages rather than implementation
+Import public functions from the flat domain packages rather than implementation
 modules.
 
 ## Core Contracts
 
-- Inputs are `numpy.ndarray` values with real numeric or boolean dtype.
+- Processing inputs are `numpy.ndarray` values with real numeric or boolean dtype.
 - Images use non-empty shape `(H, W)` or `(H, W, C)` with `C in {1, 2, 3, 4}`.
 - Color images are RGB. Convert OpenCV BGR inputs before calling `sdimg`.
 - Channel meanings are grayscale, grayscale+alpha, RGB, and RGBA.
@@ -108,6 +110,8 @@ write_image(f"{image_id}.png", restored)
 
 `read_image` returns RGB `uint8`. High-bit-depth and floating images are scaled
 explicitly before RGB conversion. `write_image` writes RGB and ignores alpha.
-`make_array_id` includes the array dtype, original shape, and content.
+`make_array_id` accepts any shape and any non-object dtype, and includes the
+full dtype definition, original shape, and content. Structured dtype field names
+and layout therefore participate in the ID.
 The lossless WebP string codec preserves RGBA alpha and ignores
 grayscale+alpha's alpha channel.

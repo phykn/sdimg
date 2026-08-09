@@ -71,3 +71,12 @@ def test_morphology_rejects_invalid_op() -> None:
     src[2, 2] = 1
     with pytest.raises(ValueError, match="operation must be one of"):
         apply_morphology(src, operation="invalid")
+
+
+@pytest.mark.parametrize("operation", [7, None, ["open"]])
+def test_morphology_rejects_non_string_operation(operation: object) -> None:
+    with pytest.raises(TypeError, match="operation must be a str"):
+        apply_morphology(
+            np.zeros((5, 5), dtype=np.uint8),
+            operation=operation,  # type: ignore[arg-type]
+        )

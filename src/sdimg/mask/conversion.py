@@ -19,6 +19,8 @@ def convert_to_mask(mask: object) -> np.ndarray:
         raise ValueError("mask must have a real-valued dtype.")
     if array.dtype == np.bool_:
         return array.astype(np.uint8)
+    if array.dtype == np.uint8 and int(array.max()) <= 1:
+        return array.copy()
 
     valid_01 = bool(np.all((array == 0) | (array == 1)))
     if valid_01:

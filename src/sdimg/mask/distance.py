@@ -15,6 +15,8 @@ def compute_distance_transform(
 ) -> np.ndarray:
     binary = convert_to_mask(mask)
     mapping = {"l1": cv2.DIST_L1, "l2": cv2.DIST_L2, "c": cv2.DIST_C}
+    if not isinstance(distance_type, str):
+        raise TypeError("distance_type must be a str.")
     if distance_type not in mapping:
         raise ValueError("distance_type must be one of: 'l1', 'l2', 'c'.")
     if not isinstance(mask_size, int) or isinstance(mask_size, bool):
