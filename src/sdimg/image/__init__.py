@@ -4,12 +4,11 @@ from .enhancement import (
     adjust_brightness_contrast,
     apply_clahe,
     equalize_histogram,
-    normalize_minmax,
-    normalize_zscore,
 )
 from .files import read_image, write_image
 from .filtering import apply_gaussian_blur, apply_median_blur, denoise, sharpen
 from .identity import make_array_id
+from .normalization import normalize_minmax, normalize_zscore
 
 __all__ = [
     "adjust_brightness_contrast",

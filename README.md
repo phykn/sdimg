@@ -14,7 +14,7 @@ pip install sdimg
 | Path | Responsibility |
 | --- | --- |
 | `sdimg.core` | Shared array, shape, parameter, and bbox contracts. It contains no image-processing algorithms. |
-| `sdimg.image` | Image representation conversion, filtering, enhancement, identity, codecs, and file I/O. Channel and Pillow adapters stay in this domain. |
+| `sdimg.image` | Image representation conversion, filtering, enhancement, normalization, identity, codecs, and file I/O. Channel and Pillow adapters stay in this domain. |
 | `sdimg.mask` | Binary-mask conversion, measurement, morphology, connected components, hulls, and distance transforms. |
 | `sdimg.spatial` | Dtype-preserving crop, pad, resize, transform, and tiling operations. `tile.split` owns tile layout; `tile.merge` owns validated numerical reconstruction. |
 | `sdimg.segment` | Algorithms that orchestrate image, mask, and spatial operations: Otsu thresholding and GrabCut refinement. |
@@ -44,6 +44,11 @@ modules.
   channel shape and leave alpha content unchanged. Color denoising follows the
   RGB contract; setting both denoising strengths to zero is an exact converted
   no-op.
+- Normalization operates per visual channel and preserves alpha. Constant
+  channels become midgray (`128`); non-finite visual values are rejected.
+  Channel scaling keeps min-max and z-score calculations stable for very large
+  and very small finite `float64` inputs. Compared with versions before 0.3.4,
+  rounding-boundary results can differ by one `uint8` level.
 - Masks use non-empty shape `(H, W)` and values `bool`, `{0, 1}`, or `{0, 255}`.
   Mask processing returns binary `np.uint8` in `{0, 1}`; distance transforms
   return `np.float32`. Two-dimensional morphology kernel sizes use
