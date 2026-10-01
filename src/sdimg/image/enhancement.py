@@ -1,9 +1,10 @@
+from collections.abc import Callable
+
 import cv2
 import numpy as np
 
 from ..core.validation import validate_finite, validate_image, validate_positive_int
-from .channels import prepare_visual_alpha, restore_visual_alpha
-from .conversion import convert_to_uint8
+from .conversion import _prepare_visual_alpha, _restore_visual_alpha, convert_to_uint8
 
 
 def adjust_brightness_contrast(
@@ -14,7 +15,7 @@ def adjust_brightness_contrast(
     image = validate_image(image)
     brightness = _validate_unit_range(brightness, "brightness")
     contrast = _validate_unit_range(contrast, "contrast")
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -22,12 +23,12 @@ def adjust_brightness_contrast(
     adjusted = (visual.astype(np.float32) - 127.5) * (1.0 + contrast)
     adjusted += 127.5 + brightness * 255.0
     result = convert_to_uint8(adjusted)
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def equalize_histogram(image: np.ndarray) -> np.ndarray:
     image = validate_image(image)
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -35,7 +36,7 @@ def equalize_histogram(image: np.ndarray) -> np.ndarray:
         result = _apply_luminance(visual, cv2.equalizeHist)
     except Exception as exc:
         raise RuntimeError(f"equalize_histogram failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def apply_clahe(
@@ -48,7 +49,7 @@ def apply_clahe(
     if clip_limit <= 0:
         raise ValueError("clip_limit must be greater than 0.")
     grid = _validate_grid_size(tile_grid_size)
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -57,14 +58,17 @@ def apply_clahe(
         result = _apply_luminance(visual, clahe.apply)
     except Exception as exc:
         raise RuntimeError(f"apply_clahe failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
-def _apply_luminance(image: np.ndarray, transform: object) -> np.ndarray:
+def _apply_luminance(
+    image: np.ndarray,
+    transform: Callable[[np.ndarray], np.ndarray],
+) -> np.ndarray:
     if image.ndim == 2:
-        return transform(image)  # type: ignore[operator]
+        return transform(image)
     ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-    ycrcb[..., 0] = transform(ycrcb[..., 0])  # type: ignore[operator]
+    ycrcb[..., 0] = transform(ycrcb[..., 0])
     return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2RGB)
 
 

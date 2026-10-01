@@ -4,7 +4,7 @@ import io
 import numpy as np
 from PIL import Image
 
-from .pillow import prepare_pillow_array
+from .conversion import _prepare_pillow_array
 
 
 def encode_image(
@@ -15,7 +15,7 @@ def encode_image(
 ) -> str:
     method = _validate_int_range(method, "method", 0, 6)
     quality = _validate_int_range(quality, "quality", 0, 100)
-    pillow_array, channels = prepare_pillow_array(image)
+    pillow_array, channels = _prepare_pillow_array(image)
     prefix = {1: b"L", 3: b"R", 4: b"A"}[channels]
 
     try:

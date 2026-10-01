@@ -83,3 +83,34 @@ def test_make_array_id_is_stable_for_noncontiguous_structured_array() -> None:
     assert make_array_id(array, length=32) == make_array_id(
         np.ascontiguousarray(array), length=32
     )
+
+
+@pytest.mark.parametrize("dtype", ["datetime64[ns]", "timedelta64[us]"])
+def test_make_array_id_hashes_time_arrays_as_raw_bytes(dtype: str) -> None:
+    array = np.arange(12).astype(dtype).reshape(3, 4)[:, ::2]
+    expected = hashlib.md5()
+    expected.update(array.dtype.str.encode("ascii"))
+    expected.update(np.asarray(array.shape, dtype=np.int64).tobytes())
+    expected.update(array.tobytes())
+
+    assert make_array_id(array, length=32) == expected.hexdigest()
+    assert make_array_id(array, length=32) == make_array_id(array.copy(), length=32)
+
+
+def test_make_array_id_supports_overlapping_structured_fields() -> None:
+    dtype = np.dtype(
+        {"names": ["left", "right"], "formats": ["u8", "u8"], "offsets": [0, 0]}
+    )
+    array = np.zeros(4, dtype=dtype)[::2]
+    changed = array.copy()
+    changed["left"][0] = 1
+
+    assert make_array_id(array, length=32) == make_array_id(array.copy(), length=32)
+    assert make_array_id(array, length=32) != make_array_id(changed, length=32)
+
+
+@pytest.mark.parametrize("shape", [(), (0,), (2, 3)])
+def test_make_array_id_supports_zero_itemsize_arrays(shape: tuple[int, ...]) -> None:
+    array = np.zeros(shape, dtype="V0")
+
+    assert make_array_id(array, length=32) == make_array_id(array.copy(), length=32)

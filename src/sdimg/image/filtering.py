@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from ..core.validation import validate_finite, validate_image, validate_positive_int
-from .channels import prepare_visual_alpha, restore_visual_alpha
+from .conversion import _prepare_visual_alpha, _restore_visual_alpha
 
 
 def apply_gaussian_blur(
@@ -21,7 +21,7 @@ def apply_gaussian_blur(
     if not isinstance(border_type, int) or isinstance(border_type, bool):
         raise TypeError("border_type must be an int.")
 
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -35,7 +35,7 @@ def apply_gaussian_blur(
         )
     except Exception as exc:
         raise RuntimeError(f"apply_gaussian_blur failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def apply_median_blur(image: np.ndarray, kernel_size: int) -> np.ndarray:
@@ -44,7 +44,7 @@ def apply_median_blur(image: np.ndarray, kernel_size: int) -> np.ndarray:
     if kernel_size % 2 == 0:
         raise ValueError("kernel_size must be odd.")
 
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -52,7 +52,7 @@ def apply_median_blur(image: np.ndarray, kernel_size: int) -> np.ndarray:
         result = cv2.medianBlur(visual, kernel_size)
     except Exception as exc:
         raise RuntimeError(f"apply_median_blur failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def denoise(
@@ -72,12 +72,12 @@ def denoise(
     if template_size > search_size:
         raise ValueError("template_size must not exceed search_size.")
 
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
     if strength == 0 and color_strength == 0:
-        return restore_visual_alpha(visual, alpha, ndim, channels)
+        return _restore_visual_alpha(visual, alpha, ndim, channels)
 
     try:
         if visual.ndim == 3:
@@ -99,7 +99,7 @@ def denoise(
             )
     except Exception as exc:
         raise RuntimeError(f"denoise failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def sharpen(image: np.ndarray, amount: float = 1.0) -> np.ndarray:
@@ -108,7 +108,7 @@ def sharpen(image: np.ndarray, amount: float = 1.0) -> np.ndarray:
     if amount < 0:
         raise ValueError("amount must be greater than or equal to 0.")
 
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=True,
     )
@@ -117,7 +117,7 @@ def sharpen(image: np.ndarray, amount: float = 1.0) -> np.ndarray:
         result = cv2.addWeighted(visual, 1.0 + amount, blurred, -amount, 0.0)
     except Exception as exc:
         raise RuntimeError(f"sharpen failed: {exc}") from exc
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def _validate_kernel_size(kernel_size: object) -> tuple[int, int]:

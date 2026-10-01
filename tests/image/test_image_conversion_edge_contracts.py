@@ -55,3 +55,28 @@ def test_is_image_reflects_full_image_contract(
 def test_color_conversion_rejects_non_array(function: object) -> None:
     with pytest.raises(TypeError, match="numpy.ndarray"):
         function("not-array")  # type: ignore[operator]
+
+
+@pytest.mark.parametrize("channels", [3, 4])
+def test_convert_to_gray_preserves_weighted_sign_of_large_finite_values(
+    channels: int,
+) -> None:
+    image = np.zeros((1, 2, channels), dtype=np.float64)
+    image[0, 0, :3] = [1e308, -1e307, 0]
+    image[0, 1, :3] = [-1e308, 1e307, 0]
+    original = image.copy()
+
+    with np.errstate(over="raise", invalid="raise"):
+        out = convert_to_gray(image)
+
+    np.testing.assert_array_equal(out, [[255, 0]])
+    np.testing.assert_array_equal(image, original)
+
+
+def test_convert_to_gray_supports_largest_finite_float() -> None:
+    image = np.full((1, 2, 3), np.finfo(np.float64).max)
+
+    with np.errstate(over="raise", invalid="raise"):
+        out = convert_to_gray(image)
+
+    np.testing.assert_array_equal(out, [[255, 255]])

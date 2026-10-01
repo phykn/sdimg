@@ -1,18 +1,17 @@
 import numpy as np
 
 from ..core.validation import validate_finite, validate_image
-from .channels import prepare_visual_alpha, restore_visual_alpha
-from .conversion import convert_to_uint8
+from .conversion import _prepare_visual_alpha, _restore_visual_alpha, convert_to_uint8
 
 
 def normalize_minmax(image: np.ndarray) -> np.ndarray:
     image = validate_image(image)
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=False,
     )
     result = convert_to_uint8(_scale_channels(visual) * 255.0)
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def normalize_zscore(image: np.ndarray, std_range: float = 3.0) -> np.ndarray:
@@ -20,7 +19,7 @@ def normalize_zscore(image: np.ndarray, std_range: float = 3.0) -> np.ndarray:
     std_range = validate_finite(std_range, "std_range")
     if std_range <= 0:
         raise ValueError("std_range must be greater than 0.")
-    visual, alpha, ndim, channels = prepare_visual_alpha(
+    visual, alpha, ndim, channels = _prepare_visual_alpha(
         image,
         convert_visual=False,
     )
@@ -30,7 +29,7 @@ def normalize_zscore(image: np.ndarray, std_range: float = 3.0) -> np.ndarray:
     scores = np.divide(work - mean, std, out=np.zeros_like(work), where=std != 0)
     scores = np.clip(scores, -std_range, std_range) / std_range
     result = convert_to_uint8((scores + 1.0) * 127.5)
-    return restore_visual_alpha(result, alpha, ndim, channels)
+    return _restore_visual_alpha(result, alpha, ndim, channels)
 
 
 def _scale_channels(visual: np.ndarray) -> np.ndarray:

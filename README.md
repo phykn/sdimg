@@ -21,7 +21,10 @@ pip install sdimg
 
 The dependency direction is `core <- {image, mask, spatial} <- segment`.
 Representation-specific helpers stay with the domain that owns the
-representation; cross-domain workflows belong in `segment`.
+representation; cross-domain workflows belong in `segment`. Within `image`,
+`conversion` owns channel layouts, alpha separation/restoration, and Pillow
+array preparation. File scaling stays in `files`, while statistical
+normalization stays in `normalization`.
 
 Public imports are flat within each domain:
 
@@ -120,3 +123,14 @@ full dtype definition, original shape, and content. Structured dtype field names
 and layout therefore participate in the ID.
 The lossless WebP string codec preserves RGBA alpha and ignores
 grayscale+alpha's alpha channel.
+
+## Development
+
+From the repository root, install the package and development tools, then run
+the contract tests and build the distribution:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python -m build
+```

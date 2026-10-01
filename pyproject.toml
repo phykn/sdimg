@@ -26,6 +26,9 @@ dependencies = [
     "pillow",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest", "build"]
+
 [project.urls]
 Homepage = "https://github.com/phykn/sdimg"
 Repository = "https://github.com/phykn/sdimg"

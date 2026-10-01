@@ -26,7 +26,8 @@ def make_array_id(
     digest = hashlib.md5()
     digest.update(_encode_dtype(contiguous.dtype))
     digest.update(np.asarray(shape, dtype=np.int64).tobytes())
-    digest.update(memoryview(contiguous))
+    if contiguous.nbytes:
+        digest.update(memoryview(contiguous.view(np.uint8)))
     return prefix + digest.hexdigest()[:length]
 
 

@@ -67,3 +67,9 @@ def test_validate_positive_int_rejects_invalid_values(
 def test_validate_finite_rejects_non_finite_values(value: float) -> None:
     with pytest.raises(ValueError, match="finite"):
         validate_finite(value, name="value")
+
+
+@pytest.mark.parametrize("value", [10**400, -(10**400)], ids=["positive", "negative"])
+def test_validate_finite_rejects_unrepresentable_integers(value: int) -> None:
+    with pytest.raises(ValueError, match="value must be finite"):
+        validate_finite(value, name="value")

@@ -65,7 +65,10 @@ def validate_finite(value: object, name: str) -> float:
         value, bool
     ):
         raise TypeError(f"{name} must be a real number.")
-    result = float(value)
+    try:
+        result = float(value)
+    except OverflowError as exc:
+        raise ValueError(f"{name} must be finite.") from exc
     if not np.isfinite(result):
         raise ValueError(f"{name} must be finite.")
     return result
