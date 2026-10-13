@@ -19,10 +19,7 @@ def validate_source(value: object, name: str = "array") -> np.ndarray:
         raise ValueError(
             f"{name} must have shape (H, W) or (H, W, C) with non-empty dimensions."
         )
-    if not (array.dtype == np.bool_ or np.issubdtype(array.dtype, np.number)):
-        raise ValueError(f"{name} must have a numeric or boolean dtype.")
-    if np.issubdtype(array.dtype, np.complexfloating):
-        raise ValueError(f"{name} must have a real-valued dtype.")
+    validate_real_dtype(array.dtype, name)
     return array
 
 
@@ -38,6 +35,13 @@ def validate_mask(value: object, name: str = "mask") -> np.ndarray:
     if mask.ndim != 2 or 0 in mask.shape:
         raise ValueError(f"{name} must have non-empty shape (H, W).")
     return mask
+
+
+def validate_real_dtype(dtype: np.dtype, name: str) -> None:
+    if dtype.kind == "c":
+        raise ValueError(f"{name} must have a real-valued dtype.")
+    if dtype.kind not in "buif":
+        raise ValueError(f"{name} must have a numeric or boolean dtype.")
 
 
 def validate_bbox(

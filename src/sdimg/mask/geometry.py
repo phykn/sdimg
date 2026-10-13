@@ -15,7 +15,7 @@ def find_bbox_from_points(points: np.ndarray) -> BBox | None:
     points = validate_array(points, name="points")
     if points.ndim != 2 or points.shape[1] != 2:
         raise ValueError("points must have shape (N, 2).")
-    if points.dtype == np.bool_ or not np.issubdtype(points.dtype, np.integer):
+    if points.dtype.kind not in "iu":
         raise ValueError("points must contain non-negative integer coordinates.")
     if points.shape[0] == 0:
         return None

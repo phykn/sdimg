@@ -34,32 +34,33 @@ def _fill_component_hulls(
     if not np.any(mask):
         return mask
     try:
-        count, labels = cv2.connectedComponents(mask, connectivity=8)
-        result = np.zeros_like(mask)
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(
+            mask, connectivity=8
+        )
+        result = mask.copy()
         for label in range(1, count):
-            component = (labels == label).astype(np.uint8)
-            points = np.column_stack(np.nonzero(component))[:, ::-1].astype(np.int32)
-            if points.shape[0] < 3:
-                result = np.maximum(result, component)
+            if stats[label, cv2.CC_STAT_AREA] < 3:
                 continue
+            x, y, width, height = stats[label, :4]
+            component = labels[y:y + height, x:x + width] == label
+            points = np.column_stack(np.nonzero(component))[:, ::-1].astype(np.int32)
+            region = result[y:y + height, x:x + width]
             if concavity is None:
                 hull = cv2.convexHull(points)
-                cv2.fillConvexPoly(result, hull, 1)
+                cv2.fillConvexPoly(region, hull, 1)
             else:
+                # Concave hull tie-breaking depends on the source coordinates.
                 polygon = np.asarray(
                     build_concave_hull(
-                        points,
+                        points + (x, y),
                         concavity=concavity,
                         length_threshold=length_threshold,
                     ),
                     dtype=np.int32,
                 )
-                if polygon.shape[0] < 3:
-                    result = np.maximum(result, component)
-                else:
-                    cv2.fillPoly(result, [polygon], 1)
-            result = np.maximum(result, component)
-        return result.astype(np.uint8)
+                if polygon.shape[0] >= 3:
+                    cv2.fillPoly(region, [polygon - (x, y)], 1)
+        return result
     except Exception as exc:
         name = "fill_convex_hull" if concavity is None else "fill_concave_hull"
         raise RuntimeError(f"{name} failed: {exc}") from exc

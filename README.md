@@ -40,11 +40,13 @@ modules.
 ## Core Contracts
 
 - Processing inputs are `numpy.ndarray` values with real numeric or boolean dtype.
+  Datetime and timedelta arrays are rejected by image, mask, and spatial processing.
 - Images use non-empty shape `(H, W)` or `(H, W, C)` with `C in {1, 2, 3, 4}`.
 - Color images are RGB. Convert OpenCV BGR inputs before calling `sdimg`.
 - Channel meanings are grayscale, grayscale+alpha, RGB, and RGBA.
 - `sdimg.image` processing returns `np.uint8`. Filters and enhancement preserve
-  channel shape and leave alpha content unchanged. Color denoising follows the
+  channel shape. Alpha is converted to `uint8` by clipping and rounding, then
+  preserved without filtering or normalization. Color denoising follows the
   RGB contract; setting both denoising strengths to zero is an exact converted
   no-op.
 - Normalization operates per visual channel and preserves alpha. Constant
@@ -56,6 +58,9 @@ modules.
   Mask processing returns binary `np.uint8` in `{0, 1}`; distance transforms
   return `np.float32`. Two-dimensional morphology kernel sizes use
   `(width, height)` order.
+- Hull operations fill each 8-connected component independently and retain all
+  original foreground pixels. Hull construction and drawing use each component's
+  bounding box, avoiding repeated full-image work for small disconnected objects.
 - `sdimg.spatial` operations preserve input dtype and channel shape. `resize`
   and tile merging reject integer values outside the safe range
   `[-2**53, 2**53]` instead of silently changing them.
@@ -123,6 +128,36 @@ full dtype definition, original shape, and content. Structured dtype field names
 and layout therefore participate in the ID.
 The lossless WebP string codec preserves RGBA alpha and ignores
 grayscale+alpha's alpha channel.
+
+## Mask Hulls
+
+```python
+from sdimg.mask import fill_concave_hull, fill_convex_hull
+
+convex = fill_convex_hull(mask)
+concave = fill_concave_hull(mask, concavity=2.0)
+```
+
+Both functions process all connected components and return a binary `uint8`
+mask with the original shape. The input mask is not modified.
+
+## Tiling
+
+```python
+from sdimg.spatial import merge_tiles, split_tiles
+
+tiles, metadata = split_tiles(
+    image, grid=(3, 2), overlap=(0.25, 0.5), return_metadata=True
+)
+restored = merge_tiles(tiles, metadata)
+```
+
+`grid` uses `(columns, rows)` and `overlap` uses `(x, y)` fractions. Tiles are
+independent copies ordered by row, then column. Keep the returned `metadata`
+alongside the tiles; its `shape` and `boxes` define their output positions.
+Merging averages overlapping values, preserves dtype and channel shape, rounds
+integer averages to nearest with ties to even, and treats boolean averages of
+at least `0.5` as `True`. Every output pixel must be covered.
 
 ## Development
 

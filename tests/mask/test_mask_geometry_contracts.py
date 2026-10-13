@@ -72,6 +72,17 @@ def test_find_bbox_from_points_rejects_invalid_points(points: np.ndarray) -> Non
         find_bbox_from_points(points)
 
 
+@pytest.mark.parametrize("dtype", ["timedelta64[D]", "timedelta64[ns]"])
+@pytest.mark.parametrize("count", [0, 2])
+def test_find_bbox_from_points_rejects_duration_coordinates(
+    dtype: str, count: int
+) -> None:
+    points = np.zeros((count, 2), dtype=dtype)
+
+    with pytest.raises(ValueError, match="non-negative integer coordinates"):
+        find_bbox_from_points(points)
+
+
 def test_measure_bbox_area_validates_type_and_order() -> None:
     with pytest.raises(TypeError):
         measure_bbox_area((0.0, 0, 2, 2))  # type: ignore[arg-type]

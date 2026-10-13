@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..core.validation import validate_mask
+from ..core.validation import validate_mask, validate_real_dtype
 
 
 def is_mask(mask: object) -> bool:
@@ -13,10 +13,7 @@ def is_mask(mask: object) -> bool:
 
 def convert_to_mask(mask: object) -> np.ndarray:
     array = validate_mask(mask)
-    if not (array.dtype == np.bool_ or np.issubdtype(array.dtype, np.number)):
-        raise ValueError("mask must have a numeric or boolean dtype.")
-    if np.issubdtype(array.dtype, np.complexfloating):
-        raise ValueError("mask must have a real-valued dtype.")
+    validate_real_dtype(array.dtype, "mask")
     if array.dtype == np.bool_:
         return array.astype(np.uint8)
     if array.dtype == np.uint8 and int(array.max()) <= 1:

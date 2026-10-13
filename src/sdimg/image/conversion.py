@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..core.validation import validate_array, validate_image
+from ..core.validation import validate_array, validate_image, validate_real_dtype
 
 
 def is_image(image: object) -> bool:
@@ -13,10 +13,7 @@ def is_image(image: object) -> bool:
 
 def convert_to_uint8(array: np.ndarray) -> np.ndarray:
     array = validate_array(array)
-    if not (array.dtype == np.bool_ or np.issubdtype(array.dtype, np.number)):
-        raise ValueError("array must have a numeric or boolean dtype.")
-    if np.issubdtype(array.dtype, np.complexfloating):
-        raise ValueError("array must have a real-valued dtype.")
+    validate_real_dtype(array.dtype, "array")
     if array.dtype == np.uint8:
         return array
     if array.dtype == np.bool_:
